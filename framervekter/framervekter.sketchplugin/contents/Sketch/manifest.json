@@ -1,0 +1,26 @@
+{
+  "name" : "Framer Vekter",
+  "author" : "Hugo Lucena",
+  "homepage": "https://github.com/mludowise/Sketch-HTML-Export",
+  "bundleVersion": 1,
+  "identifier" : "com.mludowise.framerVekter",
+  "version" : 0.0,
+  "description" : "Export a framer base .vekter file from a Sketch file.",
+  "authorEmail" : "hugoglucena@gmail.com",
+  "compatibleVersion": 45.1,
+
+  "commands" : [
+    {
+      "script" : "toVekter.js",
+      "handler" : "onRun",
+      "name" : "framerVekter",
+      "identifier" : "export .vekter"
+    }
+  ],
+  "menu" : {
+    "isRoot" : true,
+    "items" : [
+      "export .vekter"
+    ]
+  }
+}
