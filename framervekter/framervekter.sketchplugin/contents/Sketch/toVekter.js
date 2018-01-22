@@ -99,63 +99,7 @@ function addFramerLayer(_layer, _parent) {
     }
 
     return
-    //
-    // // generate x and y coordinates
-    // if (layer.isArtboard) {
-    //
-    //   framerObject.x = 0;
-    //   framerObject.y = 0;
-    //
-    // } else if (parent == null) {
-    //
-    //   framerObject.x = sketchObject.absoluteRect().rulerX();
-    //   framerObject.y = sketchObject.absoluteRect().rulerY();
-    //
-    // } else {
-    //
-    //   framerObject.parent = parent;
-    //   framerObject.x = sketchObject.frame().x();
-    //   framerObject.y = sketchObject.frame().y();
-    //
-    // }
-    //
-    // var isFlattenedGroup = (sketchObject.name().slice(-1) == "*");
-    //
-    // /////////////////////////////////////////////////
-    // ////////////////// GROUP ///////////////////////
-    // ///////////////////////////////////////////////
-    //
-    // if (layer.isGroup) {
-    // //If layer is a group generate framer
-    // //and iterate trought it's children
-    //
-    //   if (isFlattenedGroup) {
-    //     Object.assign(framerObject, layerCode(sketchObject));
-    //     framerLayers.push(framerObject);
-    //
-    //   } else {
-    //
-    //     //If its a group make the parent transparent
-    //     framerObject.backgroundColor = '"transparent"';
-    //     Object.assign(framerObject, layerCode(sketchObject));
-    //     framerLayers.push(framerObject);
-    //
-    //     //Call fuction again on its children
-    //     layer.iterate(function (layer) {
-    //       processLayerRecursively(layer, name);
-    //     });
-    //   }
-    //
-    // ///////////////////////////////////////////////  SHAPE
-    // } else if (layer.isShape) {
-    //
-    //   if (isRectangle(sketchObject) || isCircle(sketchObject)) {
-    //     Object.assign(framerObject, layerWithPropertiesCode(sketchObject));
-    //   } else {
-    //     Object.assign(framerObject, layerCode(sketchObject));
-    //   }
-    //
-    //   framerLayers.push(framerObject);
+
     //
     // ///////////////////////////////////////////////  TEXT
     // } else if (layer.isText) {
@@ -171,62 +115,47 @@ function addFramerLayer(_layer, _parent) {
   }
 };
 
-////////////////////////////////////////////////////////////////////////////////
+function getUniqueId(){
 
-function layerWithPropertiesCode(layer) {
+  var _string = globalId
+  var alphabetArray = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
-  var framerObject = {};
+  function increment(_pos){
 
-  //-----------------------------------------------------------------SIZE
-  framerObject.width = layer.frame().width() * scale;
-  framerObject.height = layer.frame().height() * scale;
+    if(_string[_pos] == "z"){
+      //recursevly change next number
 
-  //-----------------------------------------------------------------FILL
-  var fill = topFill(layer.style());
-  if (fill == null) {
-    framerObject.backgroundColor = '"transparent"';
-  } else {
-    framerObject.backgroundColor = rgbaCode(fill.color());
+      _string = _string.substring(0, _pos) + 0 + _string.substring(_pos + 1);
+      _pos--
+      increment(_pos)
+
+    }else{
+
+      if(isNaN(parseInt(_string[_pos]))){
+        // increment letters
+
+        newLetter = alphabetArray[ alphabetArray.indexOf(_string[_pos]) + 1 ]
+        _string = _string.substring(0, _pos) + newLetter + _string.substring(_pos + 1);
+
+      }else{
+        //increment Numbers
+        if(_string[_pos] == 9){
+          _string = _string.substring(0, _pos) + "a" + _string.substring(_pos + 1);
+        }else{
+          var newNum = parseInt(_string[_pos]) + 1
+          _string = _string.substring(0, _pos) + newNum + _string.substring(_pos + 1);
+
+        }
+      }
+    }
   }
 
-  //-------------------------------------------------------BORDER RADIUS
-  var borderRadius;
-  if (isCircle(layer)) {
-    borderRadius = framerObject.width / 2;
-  } else {
-    borderRadius = layer.layers().firstObject().cornerRadiusFloat() * scale;
-  }
-  if (borderRadius != 0) {
-    framerObject.borderRadius = borderRadius;
-  }
-
-  //-------------------------------------------------------BORDER STYLE
-  var border = topBorder(layer.style());
-  if (border != null) {
-    framerObject.borderColor = rgbaCode(border.color());
-    framerObject.borderWidth = border.thickness() * scale;
-  }
-
-  //-------------------------------------------------------SHADOWS
-  var shadow = topShadow(layer.style());
-  if (shadow != null) {
-    framerObject.shadowColor = rgbaCode(shadow.color());
-    framerObject.shadowX = shadow.offsetX() * scale;
-    framerObject.shadowY = shadow.offsetY() * scale;
-    framerObject.shadowBlur = shadow.blurRadius() * scale;
-    framerObject.shadowSpread = shadow.spread() * scale;
-  }
-
-  //-------------------------------------------------------OPACITY
-  var opacity = layer.style().contextSettings().opacity();
-  if (opacity != 1) {
-    framerObject.opacity = opacity;
-  }
-
-  return framerObject;
+  increment(_string.length-1)
+  globalId = _string
+  return _string
 }
 
-//------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////////////
 
 function textLayerCode(layer) {
 
@@ -294,50 +223,6 @@ function textLayerCode(layer) {
     framerObject.shadowY = shadow.offsetY() * scale;
     framerObject.shadowBlur = shadow.blurRadius() * scale;
   }
-
-  var opacity = layer.style().contextSettings().opacity();
-  if (opacity != 1) {
-    framerObject.opacity = opacity;
-  }
-
-  return framerObject;
-}
-
-//------------------------------------------------------------------------------
-
-function layerCode(layer) {
-
-  var framerObject = {};
-
-  framerObject.width = layer.frame().width() * scale;
-  framerObject.height = layer.frame().height() * scale;
-
-  // if layer have an iamage get the url of the image
-    function findFormatMatchingScale(exportFormat) {
-      return exportFormat.scale() === scale;
-    }
-
-    var imageFilename = fileNameFromPath(layer.name());
-    var exportFormats = layer.exportOptions().exportFormats();
-
-    if (exportFormats.length != 0) {
-      var matchingExportFormat = exportFormats.find(findFormatMatchingScale);
-      if (matchingExportFormat == null) {
-        matchingExportFormat = exportFormats[0];
-      }
-
-      var imageExtn = matchingExportFormat.fileFormat();
-      if (matchingExportFormat.name() != null) {
-        if (matchingExportFormat.namingScheme() == 0) {
-          imageFilename = imageFilename + matchingExportFormat.name();
-        } else {
-          imageFilename = matchingExportFormat.name() + imageFilename;
-        }
-      }
-
-      framerObject.image = '"images/' + imageFilename + '.' + imageExtn + '"';
-    }
-
 
   var opacity = layer.style().contextSettings().opacity();
   if (opacity != 1) {
@@ -516,8 +401,6 @@ function getStyle(_obj,_parent,_properties){
   var fills = _obj.sketchObject.style().enabledFills();
   var fill = null;
 
-  debugger
-
   if(fills.length > 0){
 
     var fillType = fills[fills.length-1].fillType();
@@ -547,7 +430,6 @@ function getStyle(_obj,_parent,_properties){
 
   //------------------BORDER RADIUS
   var borderRadius,radiusBottomLeft,radiusBottomRight,radiusTopLeft,radiusTopRight;
-  debugger
 
   if (isCircle(_obj.sketchObject)) {
     //if object is a circle:
@@ -610,8 +492,6 @@ function getStyle(_obj,_parent,_properties){
 
   var shadow = _obj.sketchObject.style().enabledShadows();
 
-  debugger
-
   if (shadow != null) {
 
     for(var i = 0; i < shadow.length; i++ ){
@@ -643,46 +523,6 @@ function getStyle(_obj,_parent,_properties){
 
   return properties
 
-}
-
-function getUniqueId(){
-
-  var _string = globalId
-  var alphabetArray = 'abcdefghijklmnopqrstuvwxyz'.split('');
-
-  function increment(_pos){
-
-    if(_string[_pos] == "z"){
-      //recursevly change next number
-
-      _string = _string.substring(0, _pos) + 0 + _string.substring(_pos + 1);
-      _pos--
-      increment(_pos)
-
-    }else{
-
-      if(isNaN(parseInt(_string[_pos]))){
-        // increment letters
-
-        newLetter = alphabetArray[ alphabetArray.indexOf(_string[_pos]) + 1 ]
-        _string = _string.substring(0, _pos) + newLetter + _string.substring(_pos + 1);
-
-      }else{
-        //increment Numbers
-        if(_string[_pos] == 9){
-          _string = _string.substring(0, _pos) + "a" + _string.substring(_pos + 1);
-        }else{
-          var newNum = parseInt(_string[_pos]) + 1
-          _string = _string.substring(0, _pos) + newNum + _string.substring(_pos + 1);
-
-        }
-      }
-    }
-  }
-
-  increment(_string.length-1)
-  globalId = _string
-  return _string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
