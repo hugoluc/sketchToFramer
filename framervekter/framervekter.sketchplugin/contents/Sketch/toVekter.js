@@ -48,16 +48,26 @@ function onRun(context) {
     "children" : [],
     "id" : "ART"
   })
-  framerModels.frame = Object.assign({}, originalVekter.root.children[0].children[0])
+
+  framerModels.frame = Object.assign({}, originalVekter.root.children[0].children[1])
   framerModels.frame = Object.assign(framerModels.frame,{
     "children" : [],
     "id" : "FRAM"
   })
 
-  framerModels.rectangle = Object.assign({}, originalVekter.root.children[0].children[1])
+  framerModels.rectangle = Object.assign({}, originalVekter.root.children[0].children[2])
   framerModels.rectangle = Object.assign(framerModels.rectangle, {
     "children" : [],
     "id" : "RECT"
+  })
+
+  framerModels.path = Object.assign({}, originalVekter.root.children[0].children[0])
+  framerModels.pathSegment = framerModels.path.pathSegments[0]
+
+  framerModels.path = Object.assign(framerModels.path, {
+    "children" : [],
+    "pathSegments" : [],
+    "id" : "PATH"
   })
 
   //add sketch layers to root
@@ -289,13 +299,11 @@ function createRectangle(_layer,_parent,_properties){
 
 function createPath(_layer,_parent,_properties){
 
-  // debugger
+  var newObj = Object.assign({}, framerModels.path)
 
   var pathObj =  _layer.sketchObject.layers()[0]
   var points = pathObj.path().points()
   var pathSegments = []
-
-  debugger
 
   var pathFrame = {
     "x" : pathObj.frame().x(),
@@ -306,7 +314,8 @@ function createPath(_layer,_parent,_properties){
 
   for (var i = 0; i < points.length; i++) {
 
-    var pointGlobelPos = {
+    var newSegment = Object.assign({}, framerModels.pathSegment)
+    var pointGlobalPos = {
       "x" : pathFrame.x + ( pathFrame.width * points[i].point().x ),
       "y" : pathFrame.y + ( pathFrame.height * points[i].point().y),
       "handleOutX" :  pathFrame.x + ( pathFrame.width * points[i].curveTo().x),
@@ -318,25 +327,28 @@ function createPath(_layer,_parent,_properties){
     switch ( points[i].curveMode() ) {
 
       case 1:
-        pointGlobelPos.handleMirroring = "Straight"
+        pointGlobalPos.handleMirroring = "Straight"
         break;
       case 2:
-        pointGlobelPos.handleMirroring = "Mirrored"
+        pointGlobalPos.handleMirroring = "Mirrored"
         break;
       case 3:
-        pointGlobelPos.handleMirroring = "Disconected"
+        pointGlobalPos.handleMirroring = "Disconected"
         break;
       case 4:
-        pointGlobelPos.handleMirroring = "Asymmetric"
+        pointGlobalPos.handleMirroring = "Asymmetric"
         break;
     }
 
-    pathSegments.push(pointGlobelPos)
+    Object.assign(newSegment, pointGlobalPos)
+    pathSegments.push(newSegment)
 
   }
 
-  console.log(pathSegments)
+  newObj = Object.assign(newObj, { "pathSegments" : pathSegments })
+  newObj = Object.assign(newObj,_properties)
 
+  _parent.children.push(newObj)
   return
 
   // var newObj = Object.assign({}, framerModels.rectangle)
