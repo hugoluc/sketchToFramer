@@ -76,8 +76,6 @@ function addFramerLayer(_layer, _parent) {
   if (_layer.sketchObject.isVisible() && _layer.sketchObject.class() != MSSliceLayer) {
 
     var properties = getProperties(_layer,_parent))
-    console.log(properties.name)
-    console.log(properties)
 
     if(_layer.isGroup) {
 
@@ -94,8 +92,20 @@ function addFramerLayer(_layer, _parent) {
 
     }else if(_layer.isShape){
 
-      createRectangle(_layer,_parent,properties)
+      console.log(_layer.sketchObject.class() + "")
+      console.log(_layer.sketchObject.layers()[0].class() + "")
+      console.log(_layer.sketchObject.name() + "")
 
+      if(_layer.sketchObject.layers()[0].class() == MSShapePathLayer){
+        createPath(_layer,_parent,properties)
+
+      }else if (_layer.sketchObject.layers()[0].class() == MSRectangleShape){
+        createRectangle(_layer,_parent,properties)
+
+      }
+
+    }else if(_layer.isText){
+      //createText(_layer,_parent,properties)
     }
 
     return
@@ -274,6 +284,85 @@ function createRectangle(_layer,_parent,_properties){
     _parent.children.push(newObj)
 
   }
+
+}
+
+function createPath(_layer,_parent,_properties){
+
+  // debugger
+
+  var pathObj =  _layer.sketchObject.layers()[0]
+  var points = pathObj.path().points()
+  var pathSegments = []
+
+  debugger
+
+  var pathFrame = {
+    "x" : pathObj.frame().x(),
+    "y" : pathObj.frame().y(),
+    "height" : pathObj.frame().height(),
+    "width" : pathObj.frame().width()
+  }
+
+  for (var i = 0; i < points.length; i++) {
+
+    var pointGlobelPos = {
+      "x" : pathFrame.x + ( pathFrame.width * points[i].point().x ),
+      "y" : pathFrame.y + ( pathFrame.height * points[i].point().y),
+      "handleOutX" :  pathFrame.x + ( pathFrame.width * points[i].curveTo().x),
+      "handleOutY" : pathFrame.x + ( pathFrame.width * points[i].curveTo().y),
+      "handleInX" :  pathFrame.x + ( pathFrame.width * points[i].curveFrom().x),
+      "handleInY" : pathFrame.x + ( pathFrame.width * points[i].curveFrom().y)
+    }
+
+
+    switch ( points[i].curveMode() ) {
+
+      case 1:
+        pointGlobelPos.handleMirroring = "Straight"
+        break;
+      case 2:
+        pointGlobelPos.handleMirroring = "Mirrored"
+        break;
+      case 3:
+        pointGlobelPos.handleMirroring = "Disconected"
+        break;
+      case 4:
+        pointGlobelPos.handleMirroring = "Asymmetric"
+        break;
+    }
+
+    pathSegments.push(pointGlobelPos)
+
+  }
+
+  console.log(pathSegments)
+
+  return
+
+  // var newObj = Object.assign({}, framerModels.rectangle)
+  //
+  // if(_layer.sketchObject.name() + "" == "Mask"){
+  //
+  //   _parent = Object.assign(_parent, {
+  //     "width" : _layer.sketchObject.frame().width(),
+  //     "height" : _layer.sketchObject.frame().height()
+  //   })
+  //   _parent = Object.assign(_parent,getStyle(_layer,_parent,_properties))
+  //
+  // }else{
+  //
+  //   newObj = Object.assign(newObj, {
+  //     "x" : _layer.sketchObject.frame().x(),
+  //     "y" : _layer.sketchObject.frame().y(),
+  //     "width" : _layer.sketchObject.frame().width(),
+  //     "height" : _layer.sketchObject.frame().height()
+  //   })
+  //   newObj = Object.assign(newObj,_properties)
+  //   newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties))
+  //   _parent.children.push(newObj)
+  //
+  // }
 
 }
 
