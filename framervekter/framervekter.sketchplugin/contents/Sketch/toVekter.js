@@ -315,7 +315,6 @@ function createPath(_layer,_parent,_properties){
       "handleInY" : pathFrame.x + ( pathFrame.width * points[i].curveFrom().y)
     }
 
-
     switch ( points[i].curveMode() ) {
 
       case 1:
