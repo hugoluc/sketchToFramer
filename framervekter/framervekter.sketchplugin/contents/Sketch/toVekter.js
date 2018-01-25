@@ -65,7 +65,6 @@ function onRun(context) {
   framerModels.pathSegment = framerModels.path.pathSegments[0]
 
   framerModels.path = Object.assign(framerModels.path, {
-    "children" : [],
     "pathSegments" : [],
     "id" : "PATH"
   })
@@ -82,12 +81,14 @@ function onRun(context) {
 
 function addFramerLayer(_layer, _parent) {
 
-  //check is layers are visible and are not sliced
+  //check if layers are visible and are not sliced
   if (_layer.sketchObject.isVisible() && _layer.sketchObject.class() != MSSliceLayer) {
 
-    var properties = getProperties(_layer,_parent))
 
+    ///////////////////////////////////////////////  FRAME
     if(_layer.isGroup) {
+
+      var properties = getFrameProperties(_layer,_parent))
 
       if(_layer.isArtboard) {
         createCanvas(_layer,_parent,properties)
@@ -100,11 +101,14 @@ function addFramerLayer(_layer, _parent) {
         addFramerLayer(_children, _parent.children[_parent.children.length-1])
       })
 
+    ///////////////////////////////////////////////  SHAPES + PATH
     }else if(_layer.isShape){
 
-      console.log(_layer.sketchObject.class() + "")
-      console.log(_layer.sketchObject.layers()[0].class() + "")
-      console.log(_layer.sketchObject.name() + "")
+      // console.log(_layer.sketchObject.class() + "")
+      // console.log(_layer.sketchObject.layers()[0].class() + "")
+      // console.log(_layer.sketchObject.name() + "")
+
+      var properties = getShapeProperties(_layer,_parent))
 
       if(_layer.sketchObject.layers()[0].class() == MSShapePathLayer){
         createPath(_layer,_parent,properties)
@@ -114,6 +118,7 @@ function addFramerLayer(_layer, _parent) {
 
       }
 
+    ///////////////////////////////////////////////  TEXT
     }else if(_layer.isText){
       //createText(_layer,_parent,properties)
     }
@@ -175,7 +180,7 @@ function getUniqueId(){
   return _string
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
 
 function textLayerCode(layer) {
 
@@ -253,150 +258,21 @@ function textLayerCode(layer) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-////////////////////////   ADD FRAMER OBJ FROM MODELS  /////////////////////////
+///////////////////   GET PROPERTIES FROM SKETCH LAYERS   //////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-function createCanvas(_layer,_parent,_properties){
+function getShapeProperties(_obj,_parent){
 
-  var newObj = Object.assign({}, framerModels.artboard)
-  newObj = Object.assign(newObj, {
-    "x" : _layer.sketchObject.absoluteRect().rulerX(),
-    "y" : _layer.sketchObject.absoluteRect().rulerY(),
-  })
-  newObj = Object.assign(newObj,_properties)
-
-  _parent.children.push(newObj)
-
-}
-
-function createRectangle(_layer,_parent,_properties){
-
-  var newObj = Object.assign({}, framerModels.rectangle)
-
-  if(_layer.sketchObject.name() + "" == "Mask"){
-
-    _parent = Object.assign(_parent, {
-      "width" : _layer.sketchObject.frame().width(),
-      "height" : _layer.sketchObject.frame().height()
-    })
-    _parent = Object.assign(_parent,getStyle(_layer,_parent,_properties))
-
-  }else{
-
-    newObj = Object.assign(newObj, {
-      "x" : _layer.sketchObject.frame().x(),
-      "y" : _layer.sketchObject.frame().y(),
-      "width" : _layer.sketchObject.frame().width(),
-      "height" : _layer.sketchObject.frame().height()
-    })
-    newObj = Object.assign(newObj,_properties)
-    newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties))
-    _parent.children.push(newObj)
-
+  var properties = {
+    "id" : getUniqueId(),
+    "parentid" : _parent["id"],
+    "name" : _obj.sketchObject.name() + ""
   }
 
+  return properties
 }
 
-function createPath(_layer,_parent,_properties){
-
-  var newObj = Object.assign({}, framerModels.path)
-
-  var pathObj =  _layer.sketchObject.layers()[0]
-  var points = pathObj.path().points()
-  var pathSegments = []
-
-  var pathFrame = {
-    "x" : pathObj.frame().x(),
-    "y" : pathObj.frame().y(),
-    "height" : pathObj.frame().height(),
-    "width" : pathObj.frame().width()
-  }
-
-  for (var i = 0; i < points.length; i++) {
-
-    var newSegment = Object.assign({}, framerModels.pathSegment)
-    var pointGlobalPos = {
-      "x" : pathFrame.x + ( pathFrame.width * points[i].point().x ),
-      "y" : pathFrame.y + ( pathFrame.height * points[i].point().y),
-      "handleOutX" :  pathFrame.x + ( pathFrame.width * points[i].curveTo().x),
-      "handleOutY" : pathFrame.x + ( pathFrame.width * points[i].curveTo().y),
-      "handleInX" :  pathFrame.x + ( pathFrame.width * points[i].curveFrom().x),
-      "handleInY" : pathFrame.x + ( pathFrame.width * points[i].curveFrom().y)
-    }
-
-    switch ( points[i].curveMode() ) {
-
-      case 1:
-        pointGlobalPos.handleMirroring = "Straight"
-        break;
-      case 2:
-        pointGlobalPos.handleMirroring = "Mirrored"
-        break;
-      case 3:
-        pointGlobalPos.handleMirroring = "Disconected"
-        break;
-      case 4:
-        pointGlobalPos.handleMirroring = "Asymmetric"
-        break;
-    }
-
-    Object.assign(newSegment, pointGlobalPos)
-    pathSegments.push(newSegment)
-
-  }
-
-  newObj = Object.assign(newObj, { "pathSegments" : pathSegments })
-  newObj = Object.assign(newObj,_properties)
-
-  _parent.children.push(newObj)
-  return
-
-  // var newObj = Object.assign({}, framerModels.rectangle)
-  //
-  // if(_layer.sketchObject.name() + "" == "Mask"){
-  //
-  //   _parent = Object.assign(_parent, {
-  //     "width" : _layer.sketchObject.frame().width(),
-  //     "height" : _layer.sketchObject.frame().height()
-  //   })
-  //   _parent = Object.assign(_parent,getStyle(_layer,_parent,_properties))
-  //
-  // }else{
-  //
-  //   newObj = Object.assign(newObj, {
-  //     "x" : _layer.sketchObject.frame().x(),
-  //     "y" : _layer.sketchObject.frame().y(),
-  //     "width" : _layer.sketchObject.frame().width(),
-  //     "height" : _layer.sketchObject.frame().height()
-  //   })
-  //   newObj = Object.assign(newObj,_properties)
-  //   newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties))
-  //   _parent.children.push(newObj)
-  //
-  // }
-
-}
-
-function createFrame(_layer,_parent,_properties){
-
-  var newObj = Object.assign({}, framerModels.frame)
-  newObj = Object.assign(newObj, {
-    "x" : _layer.sketchObject.frame().x(),
-    "y" : _layer.sketchObject.frame().y(),
-    "width" : _layer.sketchObject.frame().width(),
-    "height" : _layer.sketchObject.frame().height()
-  })
-  newObj = Object.assign(newObj,_properties)
-  newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties))
-  _parent.children.push(newObj)
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//////////////////////////   GET PROPERTIES FROM NAME   ////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-function getProperties(_obj,_parent){
+function getFrameProperties(_obj,_parent){
 
   var name = _obj.sketchObject.name()
   var frame = _obj.sketchObject.frame()
@@ -413,24 +289,25 @@ function getProperties(_obj,_parent){
     //error Message
     return false
 
-  // Check if string have an open and a closing braquet
+    // Check if string have an open and a closing braquet
   }else if(openBraquet != -1 && closeBraquet != -1){
 
     //Check of string is well formed
     if (openBraquet < closeBraquet){
 
       var properties = {
+        "name" : _obj.sketchObject.name().substring(0,openBraquet),
         "children" : [],
         "id" : getUniqueId(),
         "parentid" : _parent["id"],
+
+        "clip" : false,
         "top" : null,
         "bottom" : null,
         "left" : null,
         "right" : null,
         "widthFactor" : null,
-        "heightFactor" : null,
-        "clip" : false,
-        "name" : _obj.sketchObject.name().substring(0,openBraquet)
+        "heightFactor" : null
       }
 
       var propertiesStr = name.substring(openBraquet+1,closeBraquet)
@@ -462,31 +339,31 @@ function getProperties(_obj,_parent){
 
       if(propertiesStr.indexOf("H") != -1
     ){
-        //height factor null
-      }
+      //height factor null
     }
-
-    return properties
-
-  }else{
-    //layer with no properties specifyed in the layer name
-
-    var properties = {
-      "children" : [],
-      "id" : getUniqueId(),
-      "parentid" : _parent["id"],
-      "top" : null,
-      "bottom" : null,
-      "left" : null,
-      "right" : null,
-      "widthFactor" : null,
-      "heightFactor" : null,
-      "clip" : false,
-      "name" : _obj.sketchObject.name() + ""
-    }
-
-    return properties
   }
+
+  return properties
+
+}else{
+  //layer with no properties specifyed in the layer name
+
+  var properties = {
+    "children" : [],
+    "id" : getUniqueId(),
+    "parentid" : _parent["id"],
+    "top" : null,
+    "bottom" : null,
+    "left" : null,
+    "right" : null,
+    "widthFactor" : null,
+    "heightFactor" : null,
+    "clip" : false,
+    "name" : _obj.sketchObject.name() + ""
+  }
+
+  return properties
+}
 
 }
 
@@ -622,6 +499,143 @@ function getStyle(_obj,_parent,_properties){
   }
 
   return properties
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////   ADD FRAMER OBJ FROM MODELS  /////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+function createCanvas(_layer,_parent,_properties){
+
+  var newObj = Object.assign({}, framerModels.artboard)
+  newObj = Object.assign(newObj, {
+    "x" : _layer.sketchObject.absoluteRect().rulerX(),
+    "y" : _layer.sketchObject.absoluteRect().rulerY(),
+  })
+  newObj = Object.assign(newObj,_properties)
+
+  _parent.children.push(newObj)
+
+}
+
+function createRectangle(_layer,_parent,_properties){
+
+  var newObj = Object.assign({}, framerModels.rectangle)
+
+  if(_layer.sketchObject.name() + "" == "Mask"){
+
+    _parent = Object.assign(_parent, {
+      "width" : _layer.sketchObject.frame().width(),
+      "height" : _layer.sketchObject.frame().height()
+    })
+    _parent = Object.assign(_parent,getStyle(_layer,_parent,_properties))
+
+  }else{
+
+    newObj = Object.assign(newObj, {
+      "x" : _layer.sketchObject.frame().x(),
+      "y" : _layer.sketchObject.frame().y(),
+      "width" : _layer.sketchObject.frame().width(),
+      "height" : _layer.sketchObject.frame().height()
+    })
+    newObj = Object.assign(newObj,_properties)
+    newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties))
+    _parent.children.push(newObj)
+
+  }
+
+}
+
+function createPath(_layer,_parent,_properties){
+
+  //FIXME add suport to open paths
+  //FIXME add suport to dashed
+  //FIXME add suport to join
+  //FIXME add suport to cap
+
+  var newObj = Object.assign({}, framerModels.path)
+
+  var pathObj =  _layer.sketchObject.layers()[0]
+  var points = pathObj.path().points()
+  var pathSegments = []
+
+  var pathFrame = {
+    "x" : pathObj.frame().x(),
+    "y" : pathObj.frame().y(),
+    "height" : pathObj.frame().height(),
+    "width" : pathObj.frame().width()
+  }
+
+  for (var i = 0; i < points.length; i++) {
+
+    var newSegment = Object.assign({}, framerModels.pathSegment)
+    var pathX = pathFrame.x + ( pathFrame.width * points[i].point().x)
+    var pathY = pathFrame.y + ( pathFrame.height * points[i].point().y)
+    var pointGlobalPos = {
+
+      "x" : pathX,
+      "y" : pathY,
+
+      "handleInX" :  pathFrame.x + ( pathFrame.width * points[i].curveTo().x) - pathX,
+      "handleInY" : pathFrame.y + ( pathFrame.width * points[i].curveTo().y) - pathY,
+
+      "handleOutX" :  pathFrame.x + ( pathFrame.width * points[i].curveFrom().x) - pathX,
+      "handleOutY" : pathFrame.y + ( pathFrame.width * points[i].curveFrom().y) - pathY
+
+    }
+
+    switch ( points[i].curveMode() ) {
+
+      case 1:
+        pointGlobalPos.handleMirroring = "straight"
+        break;
+      case 2:
+        pointGlobalPos.handleMirroring = "symmetric"
+        break;
+      case 3:
+        pointGlobalPos.handleMirroring = "disconected"
+        break;
+      case 4:
+        pointGlobalPos.handleMirroring = "asymmetric"
+        break;
+    }
+
+    Object.assign(newSegment, pointGlobalPos)
+    pathSegments.push(newSegment)
+
+  }
+
+  if(!pathObj.path().isClosed()){
+    _properties.pathClosed = false
+  }
+
+  newObj = Object.assign(newObj, {
+    "x" : _layer.sketchObject.frame().x(),
+    "y" : _layer.sketchObject.frame().y(),
+    "width" : _layer.sketchObject.frame().width(),
+    "height" : _layer.sketchObject.frame().height()
+  })
+  newObj = Object.assign(newObj, { "pathSegments" : pathSegments })
+  newObj = Object.assign(newObj,_properties)
+  newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties)) // FIXME add suport to fill and border
+
+  _parent.children.push(newObj)
+
+}
+
+function createFrame(_layer,_parent,_properties){
+
+  var newObj = Object.assign({}, framerModels.frame)
+  newObj = Object.assign(newObj, {
+    "x" : _layer.sketchObject.frame().x(),
+    "y" : _layer.sketchObject.frame().y(),
+    "width" : _layer.sketchObject.frame().width(),
+    "height" : _layer.sketchObject.frame().height()
+  })
+  newObj = Object.assign(newObj,_properties)
+  newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties))
+  _parent.children.push(newObj)
 
 }
 
