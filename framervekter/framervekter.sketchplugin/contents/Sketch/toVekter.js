@@ -600,8 +600,6 @@ function createRectangle(_layer,_parent,_properties){
 function createPath(_layer,_parent,_properties){
 
   //FIXME add suport to dashed
-  //FIXME add suport to join
-  //FIXME add suport to cap
 
   var newObj = Object.assign({}, framerModels.path)
 
@@ -634,21 +632,6 @@ function createPath(_layer,_parent,_properties){
 
     }
 
-
-    console.log(pathFrame.x)
-    console.log(pathFrame.y)
-    console.log(pathFrame.width)
-    console.log(pathFrame.height)
-    console.log("----------")
-
-    console.log(pointGlobalPos.x)
-    console.log(pointGlobalPos.y)
-    console.log(pointGlobalPos.handleInX)
-    console.log(pointGlobalPos.handleInY)
-    console.log(pointGlobalPos.handleOutX)
-    console.log(pointGlobalPos.handleOutY)
-    console.log("-------------------------------")
-
     switch ( points[i].curveMode() ) {
 
       case 1:
@@ -670,8 +653,6 @@ function createPath(_layer,_parent,_properties){
 
   }
 
-  console.log("---------------------");
-
   if(!pathObj.path().isClosed()){
     _properties.pathClosed = false
   }else{
@@ -686,7 +667,7 @@ function createPath(_layer,_parent,_properties){
   })
   newObj = Object.assign(newObj, { "pathSegments" : pathSegments })
   newObj = Object.assign(newObj,_properties)
-  newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties)) // FIXME add suport to fill and border
+  newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties))
 
   _parent.children.push(newObj)
 
