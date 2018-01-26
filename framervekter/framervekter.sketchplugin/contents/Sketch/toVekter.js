@@ -337,37 +337,38 @@ function getFrameProperties(_obj,_parent){
         //width factor null
       }
 
-      if(propertiesStr.indexOf("H") != -1
-    ){
+      if(propertiesStr.indexOf("H") != -1){
       //height factor null
+      }
     }
+
+    return properties
+
+  }else{
+    //layer with no properties specifyed in the layer name
+
+    var properties = {
+      "children" : [],
+      "id" : getUniqueId(),
+      "parentid" : _parent["id"],
+      "top" : null,
+      "bottom" : null,
+      "left" : null,
+      "right" : null,
+      "widthFactor" : null,
+      "heightFactor" : null,
+      "clip" : false,
+      "name" : _obj.sketchObject.name() + ""
+    }
+
+    return properties
   }
-
-  return properties
-
-}else{
-  //layer with no properties specifyed in the layer name
-
-  var properties = {
-    "children" : [],
-    "id" : getUniqueId(),
-    "parentid" : _parent["id"],
-    "top" : null,
-    "bottom" : null,
-    "left" : null,
-    "right" : null,
-    "widthFactor" : null,
-    "heightFactor" : null,
-    "clip" : false,
-    "name" : _obj.sketchObject.name() + ""
-  }
-
-  return properties
-}
 
 }
 
 function getStyle(_obj,_parent,_properties){
+
+  // debugger
 
   var properties = {}
 
@@ -376,30 +377,27 @@ function getStyle(_obj,_parent,_properties){
   // ///////////////////////////////////////////////
 
   var fills = _obj.sketchObject.style().enabledFills();
-  var fill = null;
 
   if(fills.length > 0){
 
-    var fillType = fills[fills.length-1].fillType();
+    properties.fillEnabled = true;
+
+    var fillType = fills[0].fillType();
 
     if (fillType == 0) {
 
-      fill = fills[fills.length-1];
+      fill = fills[0];
 
     }else if(fillType == 1){
-
+      properties.fillEnabled = true;
       properties.fillGradient = toGradient(_obj.sketchObject.style().enabledFills()[0].gradient().gradientStringWithMasterAlpha(0))
       properties.fillType = "gradient"
-
     }
 
+  }else{
+    properties.fillEnabled = false;
   }
 
-  if (fill == null) {
-    properties.fillColor = '"transparent"';
-  } else {
-    properties.fillColor = rgbaCode(fill.color())
-  }
 
   // /////////////////////////////////////////////////
   // ////////////////// BORDER //////////////////////
@@ -423,8 +421,8 @@ function getStyle(_obj,_parent,_properties){
     radiusBottomRight = rectObj.path().points()[2].cornerRadius()
     radiusBottomLeft = rectObj.path().points()[3].cornerRadius()
 
-  }else if (isRectangle(_obj.sketchObject)){
-    //if object is a shape
+  }else if(isRectangle(_obj.sketchObject)){
+    //if object is a rectangle
 
     var rectObj = _obj.sketchObject.layers().firstObject()
     radiusTopLeft = rectObj.path().points()[0].cornerRadius()
@@ -434,33 +432,85 @@ function getStyle(_obj,_parent,_properties){
 
   }
 
-  if (borderRadius != 0) {
 
-    if(radiusBottomLeft == radiusBottomRight && radiusBottomRight == radiusTopLeft && radiusTopLeft == radiusTopRight){
+  if(radiusBottomLeft == radiusBottomRight && radiusBottomRight == radiusTopLeft && radiusTopLeft == radiusTopRight){
 
-      properties.radius = radiusBottomLeft;
-      properties.radiusPerCorner = false
+    properties.radius = radiusBottomLeft;
+    properties.radiusPerCorner = false
 
-    }else{
+  }else{
 
-      properties.radius = 0
-      properties.radiusTopLeft = radiusTopLeft
-      properties.radiusTopRight = radiusTopRight
-      properties.radiusBottomRight = radiusBottomRight
-      properties.radiusBottomLeft = radiusBottomLeft
-      properties.radiusPerCorner = true
+    properties.radius = 0
+    properties.radiusTopLeft = radiusTopLeft
+    properties.radiusTopRight = radiusTopRight
+    properties.radiusBottomRight = radiusBottomRight
+    properties.radiusBottomLeft = radiusBottomLeft
+    properties.radiusPerCorner = true
 
-    }
   }
+
 
   //---------------------BORDER STYLE
 
-  var border = topBorder(_obj.sketchObject.style());
-  if (border != null) {
-    properties.borderColor = rgbToHex(border.color());
-    properties.borderWidth = border.thickness();
-    properties.borderEnabled = true;
+  if(_obj.sketchObject.class() == MSShapeGroup){
+
+    var border = _obj.sketchObject.style().enabledBorders() > 0 ? _obj.sketchObject.style().enabledBorders()[0] : null
+    var borderOptions = _obj.sketchObject.style().borderOptions()
+
+    if (border != null) {
+
+      switch ( borderOptions.lineCapStyle() ) {
+
+        case 0:
+          properties.lineCap = "butt"
+          break;
+        case 1:
+          properties.lineCap = "round"
+          break;
+        case 2:
+          properties.lineCap = "square"
+          break;
+      }
+
+      switch ( borderOptions.lineJoinStyle() ) {
+
+        case 0:
+          properties.lineJoin = "miter"
+          break;
+        case 1:
+          properties.lineJoin = "round"
+          break;
+        case 2:
+          properties.lineJoin = "bevel"
+          break;
+      }
+
+      Object.assign(properties,{
+        "strokeAlignment" : "center",
+        "strokeColor" : rgbToHex(border.color()),
+        "strokeDashArray" : "0",
+        "strokeDashOffset" : 0,
+        "strokeEnabled" : _obj.sketchObject.style().borders()[0].isEnabled(),
+        "strokeMiterLimit" : _obj.sketchObject.style().miterLimit(),
+        "strokeWidth" : border.thickness(),
+      })
+
+      properties.borderColor = rgbToHex(border.color());
+      properties.borderWidth = border.thickness();
+      properties.borderEnabled = true;
+    }
+
+  }else{
+
+    var border = topBorder(_obj.sketchObject.style());
+    if (border != null) {
+      properties.borderColor = rgbToHex(border.color());
+      properties.borderWidth = border.thickness();
+      properties.borderEnabled = true;
+    }
+
   }
+
 
   // /////////////////////////////////////////////////
   // ////////////////// SHADOWS /////////////////////
@@ -549,7 +599,6 @@ function createRectangle(_layer,_parent,_properties){
 
 function createPath(_layer,_parent,_properties){
 
-  //FIXME add suport to open paths
   //FIXME add suport to dashed
   //FIXME add suport to join
   //FIXME add suport to cap
@@ -561,29 +610,44 @@ function createPath(_layer,_parent,_properties){
   var pathSegments = []
 
   var pathFrame = {
-    "x" : pathObj.frame().x(),
-    "y" : pathObj.frame().y(),
-    "height" : pathObj.frame().height(),
-    "width" : pathObj.frame().width()
+    "x" : parseFloat((pathObj.frame().x()).toFixed(3)),
+    "y" : parseFloat((pathObj.frame().y()).toFixed(3)),
+    "height" : parseFloat((pathObj.frame().height()).toFixed(3)),
+    "width" : parseFloat((pathObj.frame().width()).toFixed(3))
   }
 
   for (var i = 0; i < points.length; i++) {
 
     var newSegment = Object.assign({}, framerModels.pathSegment)
-    var pathX = pathFrame.x + ( pathFrame.width * points[i].point().x)
-    var pathY = pathFrame.y + ( pathFrame.height * points[i].point().y)
+    var pathX = parseFloat(pathFrame.x + ( pathFrame.width * points[i].point().x).toFixed(3))
+    var pathY = parseFloat(pathFrame.y + ( pathFrame.height * points[i].point().y).toFixed(3))
     var pointGlobalPos = {
 
       "x" : pathX,
       "y" : pathY,
 
-      "handleInX" :  pathFrame.x + ( pathFrame.width * points[i].curveTo().x) - pathX,
-      "handleInY" : pathFrame.y + ( pathFrame.width * points[i].curveTo().y) - pathY,
+      "handleInX" : parseFloat((pathFrame.x + ( pathFrame.width * points[i].curveTo().x) - pathX).toFixed(3)),
+      "handleInY" : parseFloat((pathFrame.y + ( pathFrame.height * points[i].curveTo().y) - pathY).toFixed(3)),
 
-      "handleOutX" :  pathFrame.x + ( pathFrame.width * points[i].curveFrom().x) - pathX,
-      "handleOutY" : pathFrame.y + ( pathFrame.width * points[i].curveFrom().y) - pathY
+      "handleOutX" : parseFloat((pathFrame.x + ( pathFrame.width * points[i].curveFrom().x) - pathX).toFixed(3)),
+      "handleOutY" : parseFloat((pathFrame.y + ( pathFrame.height * points[i].curveFrom().y) - pathY).toFixed(3))
 
     }
+
+
+    console.log(pathFrame.x)
+    console.log(pathFrame.y)
+    console.log(pathFrame.width)
+    console.log(pathFrame.height)
+    console.log("----------")
+
+    console.log(pointGlobalPos.x)
+    console.log(pointGlobalPos.y)
+    console.log(pointGlobalPos.handleInX)
+    console.log(pointGlobalPos.handleInY)
+    console.log(pointGlobalPos.handleOutX)
+    console.log(pointGlobalPos.handleOutY)
+    console.log("-------------------------------")
 
     switch ( points[i].curveMode() ) {
 
@@ -594,10 +658,10 @@ function createPath(_layer,_parent,_properties){
         pointGlobalPos.handleMirroring = "symmetric"
         break;
       case 3:
-        pointGlobalPos.handleMirroring = "disconected"
+        pointGlobalPos.handleMirroring = "disconnected"
         break;
       case 4:
-        pointGlobalPos.handleMirroring = "asymmetric"
+        pointGlobalPos.handleMirroring = "disconnected"
         break;
     }
 
@@ -606,8 +670,12 @@ function createPath(_layer,_parent,_properties){
 
   }
 
+  console.log("---------------------");
+
   if(!pathObj.path().isClosed()){
     _properties.pathClosed = false
+  }else{
+    _properties.pathClosed = true
   }
 
   newObj = Object.assign(newObj, {
@@ -645,7 +713,7 @@ function createFrame(_layer,_parent,_properties){
 
 function isRectangle(layer) {
   var layerCount = layer.layers().count();
-  var layerClass = layer.layers()[0].class();
+  var layerClass = layer.layers()[0].class() == MSRectangleShape;
 
   if (layerCount == 1 && layerClass == MSRectangleShape) {
     return true;
