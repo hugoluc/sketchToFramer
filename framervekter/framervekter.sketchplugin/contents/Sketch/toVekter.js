@@ -386,7 +386,8 @@ function getStyle(_obj,_parent,_properties){
 
     if (fillType == 0) {
 
-      fill = fills[0];
+      properties.fillColor = rgbaCode(fills[0].color())
+      debugger
 
     }else if(fillType == 1){
       properties.fillEnabled = true;
