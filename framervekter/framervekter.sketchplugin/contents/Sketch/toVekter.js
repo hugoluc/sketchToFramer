@@ -39,7 +39,7 @@ function onRun(context) {
   newRoot = Object.assign({}, originalVekter.root)
   newRoot = Object.assign(newRoot,{
     "children" : [],
-    "id" : getUniqueId()
+    "id" : globalId
   })
 
   //Generate framer object models
@@ -68,6 +68,13 @@ function onRun(context) {
     "pathSegments" : [],
     "id" : "PATH"
   })
+
+  framerModels.text = Object.assign({}, originalVekter.root.children[0].children[3])
+  framerModels.text = Object.assign(framerModels.text, {
+    "id" : "TEXT"
+  })
+
+
 
   //add sketch layers to root
   selection.iterate(function (layer) {
@@ -104,10 +111,6 @@ function addFramerLayer(_layer, _parent) {
     ///////////////////////////////////////////////  SHAPES + PATH
     }else if(_layer.isShape){
 
-      // console.log(_layer.sketchObject.class() + "")
-      // console.log(_layer.sketchObject.layers()[0].class() + "")
-      // console.log(_layer.sketchObject.name() + "")
-
       var properties = getShapeProperties(_layer,_parent))
 
       if(_layer.sketchObject.layers()[0].class() == MSShapePathLayer){
@@ -120,22 +123,10 @@ function addFramerLayer(_layer, _parent) {
 
     ///////////////////////////////////////////////  TEXT
     }else if(_layer.isText){
-      //createText(_layer,_parent,properties)
+      console.log("creating text");
+      var properties = getShapeProperties(_layer,_parent))
+      createText(_layer,_parent,properties)
     }
-
-    return
-
-    //
-    // ///////////////////////////////////////////////  TEXT
-    // } else if (layer.isText) {
-    //   framerObject.layerType = "TextLayer";
-    //   Object.assign(framerObject, textLayerCode(sketchObject));
-    //   framerLayers.push(framerObject);
-    //
-    // } else {
-    //   Object.assign(framerObject, layerCode(sketchObject));
-    //   framerLayers.push(framerObject);
-    // }
 
   }
 };
@@ -241,7 +232,7 @@ function textLayerCode(layer) {
 
   framerObject.color = rgbaCode(layer.textColor());
 
-  var shadow = topShadow(layer.style());
+  var shadow = getShadow(layer.style());
   if (shadow != null) {
     framerObject.shadowColor = rgbaCode(shadow.color());
     framerObject.shadowX = shadow.offsetX() * scale;
@@ -368,8 +359,6 @@ function getFrameProperties(_obj,_parent){
 
 function getStyle(_obj,_parent,_properties){
 
-  // debugger
-
   var properties = {}
 
   // /////////////////////////////////////////////////
@@ -387,11 +376,10 @@ function getStyle(_obj,_parent,_properties){
     if (fillType == 0) {
 
       properties.fillColor = rgbaCode(fills[0].color())
-      debugger
 
     }else if(fillType == 1){
       properties.fillEnabled = true;
-      properties.fillGradient = toGradient(_obj.sketchObject.style().enabledFills()[0].gradient().gradientStringWithMasterAlpha(0))
+      properties.fillGradient = getGradient(_obj.sketchObject.style().enabledFills()[0].gradient().gradientStringWithMasterAlpha(0))
       properties.fillType = "gradient"
     }
 
@@ -503,7 +491,7 @@ function getStyle(_obj,_parent,_properties){
 
   }else{
 
-    var border = topBorder(_obj.sketchObject.style());
+    var border = getBorder(_obj.sketchObject.style());
     if (border != null) {
       properties.borderColor = rgbToHex(border.color());
       properties.borderWidth = border.thickness();
@@ -550,6 +538,126 @@ function getStyle(_obj,_parent,_properties){
   }
 
   return properties
+
+}
+
+function getTextStyle(_obj,_parent,_properties){
+
+  var properties = {
+    "styledText" : Object.assign({},framerModels.text.styledText)
+  }
+  properties.styledText.blocks = []
+
+  //create block model
+  var blockModel = Object.assign({},framerModels.text.styledText.blocks[0])
+  blockModel.inlineStyleRanges = []
+
+  //get all individual styles per segment of text
+  var atributes = _obj.sketchObject.attributedString().treeAsDictionary().value.attributes
+  var styleIndex = [0];
+  var styles = [];
+
+  for(var i = 0; i < atributes.length; i++){
+
+    var lineAtributes = atributes[i].text.trim().split("\n")
+    for(var l = 0; l < lineAtributes.length; l++){
+
+      styles.push({
+
+          "index" : lineAtributes[l].length + styleIndex[i+l],
+          "text" : lineAtributes[l],
+          "COLOR" : atributes[i].NSColor.color,
+          "FONT" : atributes[i].NSFont.attributes.NSFontNameAttribute,
+          "SIZE" : atributes[i].NSFont.attributes.NSFontSizeAttribute,
+          "LINEHEIGHT" : atributes[i].NSParagraphStyle.style.maximumLineHeight,
+          "LETTERSPACING" : atributes[i].NSParagraphStyle.style.lineSpacing,
+          "ALIGN" : atributes[i].NSParagraphStyle.style.lineSpacing
+
+      })
+      styleIndex.push(lineAtributes[l].length + styleIndex[i+l])
+    }
+  }
+
+  //arrange styles per line of text
+  var stringBlocks = _obj.sketchObject.stringValue().split("\n")
+  var blockIndex = [0];
+  var blocks = [];
+  var styleCount = 0
+
+  var allBlocks
+
+  for (var i = 0; i < stringBlocks.length; i++) {
+    blocks[i] = []
+    blockIndex.push( blockIndex[i] + stringBlocks[i].length)
+
+    for(var l = styleCount; l < styles.length; l++){
+      if(styleIndex[l] < blockIndex[i+1]){
+
+        blocks[i].push(styles[l])
+        styleCount++
+
+      }else{
+        break
+      }
+    }
+  }
+
+  //generate code from line styles
+  var stylesNames = ["FONT","COLOR"]//,"SIZE","LETTERSPACING","LINEHEIGHT","ALIGN"]
+
+  for(var i = 0; i < blocks.length; i++){
+
+    debugger
+
+    blockModel.inlineStyleRanges = []
+    var newBLockCode = Object.assign({},blockModel)
+
+    for (var l = 0; l < stylesNames.length; l++) {
+
+      var styleLength = 0
+      var lastIndex = 0
+
+      for (var s = 0; s < blocks[i].length; s++) {
+
+        var currentBlockStyle = blocks[i][s]
+        var nextBlockStyle = blocks[i][s+1] || false
+        var currentStyleName = stylesNames[l]
+
+        if( !nextBlockStyle || currentBlockStyle[currentStyleName]+"" != nextBlockStyle[currentStyleName]+""){
+
+          var blockcode = {
+
+            "length" : styleLength + currentBlockStyle.text.length, //FIXME change last offset value. It should not be added
+            "offset" : lastIndex,
+            "style" : currentStyleName + ":" + currentBlockStyle[currentStyleName]
+
+          }
+
+          //add block style
+          newBLockCode.inlineStyleRanges.push(blockcode)
+
+          styleLength = 0
+          lastIndex += blockcode.length
+      //
+
+        }else{
+
+          styleLength += currentBlockStyle.text.length
+
+        }
+      }
+    }
+
+    properties.styledText.blocks.push(newBLockCode)
+
+  }
+
+  debugger
+
+  //[5,10] blocos
+  //[0,5,15] estilos
+  // _layer.sketchObject.attributedString().treeAsDictionary().value.attributes[i].text + ""
+  // _layer.sketchObject.attributedString().treeAsDictionary().value.attributes[i].text + ""
 
 }
 
@@ -689,6 +797,25 @@ function createFrame(_layer,_parent,_properties){
 
 }
 
+function createText(_layer,_parent,_properties){
+
+  console.log("creating text from model");
+
+  var newObj = Object.assign({}, framerModels.text)
+  newObj = Object.assign(newObj, {
+    "x" : _layer.sketchObject.frame().x(),
+    "y" : _layer.sketchObject.frame().y(),
+    "width" : _layer.sketchObject.frame().width(),
+    "height" : _layer.sketchObject.frame().height()
+  })
+  newObj = Object.assign(newObj,_properties)
+  newObj = Object.assign(newObj,getTextStyle(_layer,_parent,_properties))
+  _parent.children.push(newObj)
+
+
+
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////   SKETCH STYLING UTILITIES   //////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -705,7 +832,6 @@ function isRectangle(layer) {
 }
 
 function isCircle(layer) {
-
 
   var layerCount = layer.layers().count();
   var layerClass = layer.layers()[0].class();
@@ -786,7 +912,7 @@ function rgbToHex(colour){
 
 }
 
-function toGradient(_gradient){
+function getGradient(_gradient){
 
   var gradientData = _gradient.split(",")
 
@@ -806,28 +932,12 @@ function toGradient(_gradient){
 
 }
 
-function topFill(style) {
+function getBorder(style) {
 
-  var fills = style.enabledFills();
-  var i, len, fill = null;
-
-  for (i = 0, len = fills.length; i < len; i++) {
-    var fillType = fills[i].fillType();
-    if (fillType == 0) {
-      fill = fills[i];
-    }else if(1){
-      fill = _obj.sketchObject.style().enabledFills()[0].gradient().gradientStringWithMasterAlpha(0)
-    }
-  }
-
-  return fill;
-
-}
-
-function topBorder(style) {
   var borders = style.enabledBorders();
+  var border = null;
 
-  var i, len, border = null;
+  var i, len;
   for (i = 0, len = borders.length; i < len; i++) {
     var fillType = borders[i].fillType();
     if (fillType == 0) {
@@ -838,7 +948,7 @@ function topBorder(style) {
   return border;
 }
 
-function topShadow(style) {
+function getShadow(style) {
   var shadows = style.enabledShadows();
   var len = shadows.length;
 

@@ -20,9 +20,7 @@
         "borderTop" : 1,
         "borderWidth" : 1,
         "bottom" : null,
-        "boxShadows" : [
-
-        ],
+        "boxShadows" : [],
         "brightness" : 100,
         "brightnessEnabled" : 0,
         "centerAnchorX" : 0,
@@ -231,6 +229,117 @@
             "width" : 50,
             "x" : 0,
             "y" : 0
+          },
+          {
+            "__class" : "TextNode",
+            "autoSize" : true,
+            "blendingEnabled" : 0,
+            "blendingMode" : "normal",
+            "blur" : 12,
+            "blurEnabled" : 0,
+            "blurType" : "layer",
+            "bottom" : null,
+            "brightness" : 100,
+            "brightnessEnabled" : 0,
+            "centerAnchorX" : 0.043999999999999997,
+            "centerAnchorY" : 0.01424287856071964,
+            "constraintsLocked" : false,
+            "contrast" : 100,
+            "contrastEnabled" : 0,
+            "editable" : false,
+            "exportOptions" : [
+
+            ],
+            "grayscale" : 0,
+            "grayScaleEnabled" : 0,
+            "height" : 19,
+            "heightFactor" : null,
+            "hueRotate" : 0,
+            "hueRotateEnabled" : 0,
+            "id" : "jqfK28Ywn",
+            "invert" : 0,
+            "invertEnabled" : 0,
+            "left" : 0,
+            "locked" : false,
+            "name" : null,
+            "opacity" : 1,
+            "parentid" : "kRmvHE2ir",
+            "right" : null,
+            "rotation" : 0,
+            "saturate" : 100,
+            "saturateEnabled" : 0,
+            "sepia" : 0,
+            "sepiaEnabled" : 0,
+            "shadows" : [],
+            "styledText" : {
+              "__class" : "StyledTextDraft",
+              "blocks" : [
+                {
+                  "data" : {
+                    "emptyStyle" : [
+                      "FONT:SFUIText-Regular",
+                      "COLOR:rgb(0, 0, 0)",
+                      "SIZE:16",
+                      "LETTERSPACING:0",
+                      "LINEHEIGHT:1.2"
+                    ]
+                  },
+                  "depth" : 0,
+                  "entityRanges" : [
+
+                  ],
+                  "inlineStyleRanges" : [
+                    {
+                      "length" : 4,
+                      "offset" : 0,
+                      "style" : "FONT:SFUIText-Regular"
+                    },
+                    {
+                      "length" : 4,
+                      "offset" : 0,
+                      "style" : "COLOR:rgb(0, 0, 0)"
+                    },
+                    {
+                      "length" : 4,
+                      "offset" : 0,
+                      "style" : "SIZE:16"
+                    },
+                    {
+                      "length" : 4,
+                      "offset" : 0,
+                      "style" : "LETTERSPACING:0"
+                    },
+                    {
+                      "length" : 4,
+                      "offset" : 0,
+                      "style" : "LINEHEIGHT:1.2"
+                    }
+                  ],
+                  "key" : "dkq3l",
+                  "text" : "Text",
+                  "type" : "unstyled"
+                }
+              ],
+              "cached" : {
+                "html" : "<span data-offset-key=\"dkq3l-0-0\" style=\"tab-size:4;font-weight:400;font-family:&quot;SFUIText-Regular&quot;, &quot;SF UI Text&quot;, sans-serif;-webkit-text-fill-color:rgb(0, 0, 0);font-size:16px;letter-spacing:0px;line-height:1.2\"><span data-text=\"true\">Text<\/span><\/span>",
+                "os" : "10_13",
+                "size" : {
+                  "height" : 19,
+                  "width" : 33
+                },
+                "width" : 0
+              },
+              "entityMap" : {
+
+              }
+            },
+            "targetName" : null,
+            "top" : 0,
+            "visible" : true,
+            "width" : 33,
+            "widthFactor" : null,
+            "x" : 98,
+            "y" : 124
           }
         ],
         "clip" : true,
@@ -239,9 +348,7 @@
         "contrastEnabled" : 0,
         "deviceType" : "apple-iphone-8-space-gray",
         "exportIncludesBackground" : true,
-        "exportOptions" : [
-
-        ],
+        "exportOptions" : [],
         "fillColor" : "rgba(255,255,255,1)",
         "fillEnabled" : true,
         "fillGradient" : {
