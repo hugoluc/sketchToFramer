@@ -2,7 +2,11 @@ var layerNames = {};
 var framerLayers = [];
 var originalVekter = {};
 var alphabetArray = 'abcdefghijklmnopqrstuvwxyz'.split('');
-var globalId = "000000";
+
+var globelIdentifyers = {
+  "id" : "00000",
+  "key" : "000"
+}
 var originalVekter,newRoot;
 var framerModels = {};
 
@@ -39,7 +43,7 @@ function onRun(context) {
   newRoot = Object.assign({}, originalVekter.root)
   newRoot = Object.assign(newRoot,{
     "children" : [],
-    "id" : globalId
+    "id" : globelIdentifyers.id
   })
 
   //Generate framer object models
@@ -131,9 +135,9 @@ function addFramerLayer(_layer, _parent) {
   }
 };
 
-function getUniqueId(){
+function getUniqueIdentifyer(_identifyer){
 
-  var _string = globalId
+  var _string = globelIdentifyers[_identifyer]
   var alphabetArray = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
   function increment(_pos){
@@ -167,7 +171,7 @@ function getUniqueId(){
   }
 
   increment(_string.length-1)
-  globalId = _string
+  globelIdentifyers[_identifyer] = _string
   return _string
 }
 
@@ -255,7 +259,7 @@ function textLayerCode(layer) {
 function getShapeProperties(_obj,_parent){
 
   var properties = {
-    "id" : getUniqueId(),
+    "id" : getUniqueIdentifyer("id"),
     "parentid" : _parent["id"],
     "name" : _obj.sketchObject.name() + ""
   }
@@ -289,7 +293,7 @@ function getFrameProperties(_obj,_parent){
       var properties = {
         "name" : _obj.sketchObject.name().substring(0,openBraquet),
         "children" : [],
-        "id" : getUniqueId(),
+        "id" : getUniqueIdentifyer("id"),
         "parentid" : _parent["id"],
 
         "clip" : false,
@@ -340,7 +344,7 @@ function getFrameProperties(_obj,_parent){
 
     var properties = {
       "children" : [],
-      "id" : getUniqueId(),
+      "id" : getUniqueIdentifyer("id"),
       "parentid" : _parent["id"],
       "top" : null,
       "bottom" : null,
