@@ -551,6 +551,7 @@ function getTextStyle(_obj,_parent,_properties){
     "styledText" : Object.assign({},framerModels.text.styledText)
   }
   properties.styledText.blocks = []
+  properties.styledText.cached = {}
 
   //create block model
   var blockModel = Object.assign({},framerModels.text.styledText.blocks[0])
@@ -566,16 +567,43 @@ function getTextStyle(_obj,_parent,_properties){
     var lineAtributes = atributes[i].text.trim().split("\n")
     for(var l = 0; l < lineAtributes.length; l++){
 
+      var lineHeight =  atributes[i].NSParagraphStyle.style.maximumLineHeight
+      var size =  atributes[i].NSFont.attributes.NSFontSizeAttribute
+      var align;
+
+      debugger
+
+      switch (atributes[i].NSParagraphStyle.style.alignment+"") {
+        case "0":
+          align = "left"
+          break;
+
+        case "2":
+          align = "center"
+          break;
+
+        case "2":
+          align = "right"
+          break;
+
+        case "3":
+          align = "left"
+          break;
+
+        default:
+          align = "left"
+      }
+
       styles.push({
 
           "index" : lineAtributes[l].length + styleIndex[i+l],
           "text" : lineAtributes[l],
-          "COLOR" : atributes[i].NSColor.color,
+          "COLOR" : rgbaToHsl(atributes[i].NSColor.color),
           "FONT" : atributes[i].NSFont.attributes.NSFontNameAttribute,
-          "SIZE" : atributes[i].NSFont.attributes.NSFontSizeAttribute,
-          "LINEHEIGHT" : atributes[i].NSParagraphStyle.style.maximumLineHeight,
+          "SIZE" : size,
+          "LINEHEIGHT" : lineHeight == 0 ?  1 : lineHeight/size,
           "LETTERSPACING" : atributes[i].NSParagraphStyle.style.lineSpacing,
-          "ALIGN" : atributes[i].NSParagraphStyle.style.lineSpacing
+          "ALIGN" : align
 
       })
       styleIndex.push(lineAtributes[l].length + styleIndex[i+l])
@@ -589,6 +617,8 @@ function getTextStyle(_obj,_parent,_properties){
   var styleCount = 0
 
   var allBlocks
+
+  // debugger
 
   for (var i = 0; i < stringBlocks.length; i++) {
     blocks[i] = []
@@ -607,13 +637,13 @@ function getTextStyle(_obj,_parent,_properties){
   }
 
   //generate code from line styles
-  var stylesNames = ["FONT","COLOR"]//,"SIZE","LETTERSPACING","LINEHEIGHT","ALIGN"]
+  var stylesNames = ["COLOR","FONT","SIZE","ALIGN","LETTERSPACING","LINEHEIGHT"]
 
   for(var i = 0; i < blocks.length; i++){
 
-    debugger
-
     blockModel.inlineStyleRanges = []
+    blockModel.key = getUniqueIdentifyer("key")
+    blockModel.text = stringBlocks[i]
     var newBLockCode = Object.assign({},blockModel)
 
     for (var l = 0; l < stylesNames.length; l++) {
@@ -642,7 +672,6 @@ function getTextStyle(_obj,_parent,_properties){
 
           styleLength = 0
           lastIndex += blockcode.length
-      //
 
         }else{
 
@@ -656,12 +685,7 @@ function getTextStyle(_obj,_parent,_properties){
 
   }
 
-  debugger
-
-  //[5,10] blocos
-  //[0,5,15] estilos
-  // _layer.sketchObject.attributedString().treeAsDictionary().value.attributes[i].text + ""
-  // _layer.sketchObject.attributedString().treeAsDictionary().value.attributes[i].text + ""
+  return properties
 
 }
 
@@ -803,15 +827,35 @@ function createFrame(_layer,_parent,_properties){
 
 function createText(_layer,_parent,_properties){
 
-  console.log("creating text from model");
-
-  var newObj = Object.assign({}, framerModels.text)
-  newObj = Object.assign(newObj, {
+  //get text center
+  var textSize = {
+    "width" : _layer.sketchObject.frame().width(),
+    "height" :  _layer.sketchObject.frame().height(),
     "x" : _layer.sketchObject.frame().x(),
     "y" : _layer.sketchObject.frame().y(),
+    "autoSize" : false
+  }
+
+  var parentSize = {
     "width" : _layer.sketchObject.frame().width(),
-    "height" : _layer.sketchObject.frame().height()
-  })
+    "height" :  _layer.sketchObject.frame().height()
+  }
+
+  textSize.centerAnchorX = ( textSize.x + (textSize.width/2) ) / parentSize.width
+  textSize.centerAnchorY = ( textSize.x + (textSize.height/2) ) / parentSize.height
+
+  textSize.left = textSize.x
+  textSize.right = textSize.x + textSize.width
+  textSize.top = textSize.y
+  textSize.bottom = textSize.y + textSize.height
+
+  // Edges //FIXME texts are not being positioned correctly
+  // if(_layer.sketchObject.hasFixedLeft()){}
+  // if(_layer.sketchObject.hasFixedTop()){}
+
+
+  var newObj = Object.assign({}, framerModels.text)
+  newObj = Object.assign(newObj, textSize)
   newObj = Object.assign(newObj,_properties)
   newObj = Object.assign(newObj,getTextStyle(_layer,_parent,_properties))
   _parent.children.push(newObj)
@@ -825,6 +869,11 @@ function createText(_layer,_parent,_properties){
 ////////////////////////////////////////////////////////////////////////////////
 
 function isRectangle(layer) {
+
+  if(layer.layers().length == 0){
+    return false
+  }
+
   var layerCount = layer.layers().count();
   var layerClass = layer.layers()[0].class() == MSRectangleShape;
 
@@ -836,6 +885,12 @@ function isRectangle(layer) {
 }
 
 function isCircle(layer) {
+
+  console.log(layer.layers());
+
+  if(layer.layers().length == 0){
+    return false
+  }
 
   var layerCount = layer.layers().count();
   var layerClass = layer.layers()[0].class();
@@ -897,6 +952,43 @@ function getFontStyle(layer) {
 }
 
 //////////////////////////////////////////////////////////
+
+function rgbaToHsl(_colorString) {
+
+  var values = _colorString.split("(")[1].split(")")[0].split(",")
+
+  var r = parseFloat(values[0])
+  var g = parseFloat(values[1])
+  var b = parseFloat(values[2])
+  var a = parseFloat(values[3])
+
+  // r /= 255, g /= 255, b /= 255;
+
+  var max = Math.max(r, g, b), min = Math.min(r, g, b);
+  var h, s, l = (max + min) / 2;
+
+  if (max == min) {
+    h = s = 0; // achromatic
+  } else {
+    var d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+
+    h /= 6;
+  }
+
+  h = parseFloat((h*360).toFixed(0))
+  s = parseFloat((s*100).toFixed(2))
+  l = parseFloat((l*100).toFixed(2))
+  a = parseFloat(a.toFixed(2))
+
+  return 'hsla(' + h + ',' + s + '%,' + l  + '%,' + a + ')';
+}
 
 function rgbaCode(colour) {
   var red = Math.round(colour.red() * 255);

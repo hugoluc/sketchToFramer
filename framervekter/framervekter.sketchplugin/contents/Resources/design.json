@@ -247,9 +247,7 @@
             "contrast" : 100,
             "contrastEnabled" : 0,
             "editable" : false,
-            "exportOptions" : [
-
-            ],
+            "exportOptions" : [],
             "grayscale" : 0,
             "grayScaleEnabled" : 0,
             "height" : 19,
@@ -285,9 +283,7 @@
                     ]
                   },
                   "depth" : 0,
-                  "entityRanges" : [
-
-                  ],
+                  "entityRanges" : [],
                   "inlineStyleRanges" : [
                     {
                       "length" : 4,
@@ -329,9 +325,7 @@
                 },
                 "width" : 0
               },
-              "entityMap" : {
-
-              }
+              "entityMap" : {}
             },
             "targetName" : null,
             "top" : 0,
