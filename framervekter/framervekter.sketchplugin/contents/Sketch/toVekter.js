@@ -92,6 +92,8 @@ function onRun(context) {
 
 function addFramerLayer(_layer, _parent) {
 
+  debugger
+
   //check if layers are visible and are not sliced
   if (_layer.sketchObject.isVisible() && _layer.sketchObject.class() != MSSliceLayer) {
 
@@ -121,8 +123,10 @@ function addFramerLayer(_layer, _parent) {
         createPath(_layer,_parent,properties)
 
       }else if (_layer.sketchObject.layers()[0].class() == MSRectangleShape){
-        createRectangle(_layer,_parent,properties)
+        createPath(_layer,_parent,properties)
 
+      }else{
+        createPath(_layer,_parent,properties)
       }
 
     ///////////////////////////////////////////////  TEXT
@@ -443,11 +447,13 @@ function getStyle(_obj,_parent,_properties){
   }
 
 
+  debugger
+
   //---------------------BORDER STYLE
 
-  if(_obj.sketchObject.class() == MSShapeGroup){
+  if(_obj.sketchObject.class() == MSShapeGroup || isRectangle(_obj.sketchObject) || isCircle(_obj.sketchObject)){
 
-    var border = _obj.sketchObject.style().enabledBorders() > 0 ? _obj.sketchObject.style().enabledBorders()[0] : null
+    var border = _obj.sketchObject.style().enabledBorders().length > 0 ? _obj.sketchObject.style().enabledBorders()[0] : null
     var borderOptions = _obj.sketchObject.style().borderOptions()
 
     if (border != null) {
@@ -491,6 +497,11 @@ function getStyle(_obj,_parent,_properties){
       properties.borderColor = rgbToHex(border.color());
       properties.borderWidth = border.thickness();
       properties.borderEnabled = true;
+
+    }else{
+      properties.borderEnabled = false;
+      properties.strokeEnabled = false;
+
     }
 
   }else{
@@ -571,19 +582,17 @@ function getTextStyle(_obj,_parent,_properties){
       var size =  atributes[i].NSFont.attributes.NSFontSizeAttribute
       var align;
 
-      debugger
-
       switch (atributes[i].NSParagraphStyle.style.alignment+"") {
         case "0":
           align = "left"
           break;
 
-        case "2":
-          align = "center"
+          case "1":
+          align = "right"
           break;
 
         case "2":
-          align = "right"
+          align = "center"
           break;
 
         case "3":
@@ -594,6 +603,8 @@ function getTextStyle(_obj,_parent,_properties){
           align = "left"
       }
 
+      debugger
+
       styles.push({
 
           "index" : lineAtributes[l].length + styleIndex[i+l],
@@ -602,7 +613,7 @@ function getTextStyle(_obj,_parent,_properties){
           "FONT" : atributes[i].NSFont.attributes.NSFontNameAttribute,
           "SIZE" : size,
           "LINEHEIGHT" : lineHeight == 0 ?  1 : lineHeight/size,
-          "LETTERSPACING" : atributes[i].NSParagraphStyle.style.lineSpacing,
+          "LETTERSPACING" : atributes[i].NSKern,
           "ALIGN" : align
 
       })
@@ -699,6 +710,8 @@ function createCanvas(_layer,_parent,_properties){
   newObj = Object.assign(newObj, {
     "x" : _layer.sketchObject.absoluteRect().rulerX(),
     "y" : _layer.sketchObject.absoluteRect().rulerY(),
+    "width" : _layer.sketchObject.frame().width(),
+    "height" : _layer.sketchObject.frame().height()
   })
   newObj = Object.assign(newObj,_properties)
 
@@ -836,18 +849,19 @@ function createText(_layer,_parent,_properties){
     "autoSize" : false
   }
 
+
   var parentSize = {
-    "width" : _layer.sketchObject.frame().width(),
-    "height" :  _layer.sketchObject.frame().height()
+    "width" : _parent.width,
+    "height" :  _parent.height
   }
 
   textSize.centerAnchorX = ( textSize.x + (textSize.width/2) ) / parentSize.width
-  textSize.centerAnchorY = ( textSize.x + (textSize.height/2) ) / parentSize.height
+  textSize.centerAnchorY = ( textSize.y + (textSize.height/2) ) / parentSize.height
 
-  textSize.left = textSize.x
-  textSize.right = textSize.x + textSize.width
-  textSize.top = textSize.y
-  textSize.bottom = textSize.y + textSize.height
+  textSize.top = _layer.sketchObject.hasFixedTop() ? extSize.y : null
+  textSize.left = _layer.sketchObject.hasFixedLeft() ? textSize.x : null
+  textSize.right = _layer.sketchObject.hasFixedRight() ? textSize.x + textSize.width : null
+  textSize.bottom = _layer.sketchObject.hasFixedBottom() ? textSize.y + textSize.height : null
 
   // Edges //FIXME texts are not being positioned correctly
   // if(_layer.sketchObject.hasFixedLeft()){}
@@ -855,9 +869,9 @@ function createText(_layer,_parent,_properties){
 
 
   var newObj = Object.assign({}, framerModels.text)
-  newObj = Object.assign(newObj, textSize)
-  newObj = Object.assign(newObj,_properties)
+  newObj = Object.assign(newObj, _properties)
   newObj = Object.assign(newObj,getTextStyle(_layer,_parent,_properties))
+  newObj = Object.assign(newObj, textSize)
   _parent.children.push(newObj)
 
 
