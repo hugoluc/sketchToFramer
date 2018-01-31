@@ -92,11 +92,8 @@ function onRun(context) {
 
 function addFramerLayer(_layer, _parent) {
 
-  debugger
-
   //check if layers are visible and are not sliced
   if (_layer.sketchObject.isVisible() && _layer.sketchObject.class() != MSSliceLayer) {
-
 
     ///////////////////////////////////////////////  FRAME
     if(_layer.isGroup) {
@@ -123,7 +120,7 @@ function addFramerLayer(_layer, _parent) {
         createPath(_layer,_parent,properties)
 
       }else if (_layer.sketchObject.layers()[0].class() == MSRectangleShape){
-        createPath(_layer,_parent,properties)
+        createRectangle(_layer,_parent,properties)
 
       }else{
         createPath(_layer,_parent,properties)
@@ -131,7 +128,6 @@ function addFramerLayer(_layer, _parent) {
 
     ///////////////////////////////////////////////  TEXT
     }else if(_layer.isText){
-      console.log("creating text");
       var properties = getShapeProperties(_layer,_parent))
       createText(_layer,_parent,properties)
     }
@@ -406,8 +402,8 @@ function getStyle(_obj,_parent,_properties){
   if (isCircle(_obj.sketchObject)) {
     //if object is a circle:
 
-    borderRadius = _obj.sketchObject.frame.width() / 2;
-    radiusBottomLeft,radiusBottomRight,radiusTopLeft,radiusTopRight = _obj.sketchObject.frame.width() / 2;
+    // borderRadius = _obj.sketchObject.frame.width() / 2;
+    // radiusBottomLeft,radiusBottomRight,radiusTopLeft,radiusTopRight = _obj.sketchObject.frame.width() / 2;
 
   } else if(_properties.clip) {
     //if object is a mask
@@ -445,9 +441,6 @@ function getStyle(_obj,_parent,_properties){
     properties.radiusPerCorner = true
 
   }
-
-
-  debugger
 
   //---------------------BORDER STYLE
 
@@ -519,6 +512,7 @@ function getStyle(_obj,_parent,_properties){
   // /////////////////////////////////////////////////
   // ////////////////// SHADOWS /////////////////////
   // ///////////////////////////////////////////////
+
   properties.boxShadows = []
 
   var shadow = _obj.sketchObject.style().enabledShadows();
@@ -573,6 +567,8 @@ function getTextStyle(_obj,_parent,_properties){
   var styleIndex = [0];
   var styles = [];
 
+  debugger
+
   for(var i = 0; i < atributes.length; i++){
 
     var lineAtributes = atributes[i].text.trim().split("\n")
@@ -603,13 +599,14 @@ function getTextStyle(_obj,_parent,_properties){
           align = "left"
       }
 
-      debugger
+      var color = atributes[i].MSAttributedStringColorAttribute.value + ""
+      color = color[0] == "#" ? hexToRGB(color) : rgbaToHsl(color)
 
       styles.push({
 
           "index" : lineAtributes[l].length + styleIndex[i+l],
           "text" : lineAtributes[l],
-          "COLOR" : rgbaToHsl(atributes[i].NSColor.color),
+          "COLOR" : color,
           "FONT" : atributes[i].NSFont.attributes.NSFontNameAttribute,
           "SIZE" : size,
           "LINEHEIGHT" : lineHeight == 0 ?  1 : lineHeight/size,
@@ -628,8 +625,6 @@ function getTextStyle(_obj,_parent,_properties){
   var styleCount = 0
 
   var allBlocks
-
-  // debugger
 
   for (var i = 0; i < stringBlocks.length; i++) {
     blocks[i] = []
@@ -703,6 +698,18 @@ function getTextStyle(_obj,_parent,_properties){
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////   ADD FRAMER OBJ FROM MODELS  /////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+function hexToRGB(hex, alpha) {
+    var r = parseInt(hex.slice(1, 3), 16),
+        g = parseInt(hex.slice(3, 5), 16),
+        b = parseInt(hex.slice(5, 7), 16);
+
+    if (alpha) {
+        return "rgba(" + r + ", " + g + ", " + b + ", " + alpha + ")";
+    } else {
+        return "rgb(" + r + ", " + g + ", " + b + ")";
+    }
+}
 
 function createCanvas(_layer,_parent,_properties){
 
@@ -778,8 +785,12 @@ function createPath(_layer,_parent,_properties){
       "handleInY" : parseFloat((pathFrame.y + ( pathFrame.height * points[i].curveTo().y) - pathY).toFixed(3)),
 
       "handleOutX" : parseFloat((pathFrame.x + ( pathFrame.width * points[i].curveFrom().x) - pathX).toFixed(3)),
-      "handleOutY" : parseFloat((pathFrame.y + ( pathFrame.height * points[i].curveFrom().y) - pathY).toFixed(3))
+      "handleOutY" : parseFloat((pathFrame.y + ( pathFrame.height * points[i].curveFrom().y) - pathY).toFixed(3)),
 
+    }
+
+    if(_layer.sketchObject.layers()[0].class() == MSRectangleShape){
+      pointGlobalPos.cornerRadius = points[i].point().cornerRadius
     }
 
     switch ( points[i].curveMode() ) {
@@ -889,9 +900,9 @@ function isRectangle(layer) {
   }
 
   var layerCount = layer.layers().count();
-  var layerClass = layer.layers()[0].class() == MSRectangleShape;
+  var layerClass = layer.layers()[0].class() + ""
 
-  if (layerCount == 1 && layerClass == MSRectangleShape) {
+  if (layerCount == 1 && layerClass == "MSRectangleShape") {
     return true;
   } else {
     return false;
@@ -907,11 +918,11 @@ function isCircle(layer) {
   }
 
   var layerCount = layer.layers().count();
-  var layerClass = layer.layers()[0].class();
+  var layerClass = layer.layers()[0].class() + "";
   var width = layer.frame().width();
   var height = layer.frame().height();
 
-  if (layerCount == 1 && layerClass == MSOvalShape && width == height) {
+  if (layerCount == 1 && layerClass == "MSOvalShape" && width == height) {
     return true;
   } else {
     return false;
