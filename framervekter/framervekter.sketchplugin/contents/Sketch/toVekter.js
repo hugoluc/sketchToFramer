@@ -869,10 +869,11 @@ function createText(_layer,_parent,_properties){
   textSize.centerAnchorX = ( textSize.x + (textSize.width/2) ) / parentSize.width
   textSize.centerAnchorY = ( textSize.y + (textSize.height/2) ) / parentSize.height
 
-  textSize.top = _layer.sketchObject.hasFixedTop() ? extSize.y : null
+  textSize.right = _layer.sketchObject.hasFixedRight() ? parentSize.width - (textSize.x + textSize.width) : null
   textSize.left = _layer.sketchObject.hasFixedLeft() ? textSize.x : null
-  textSize.right = _layer.sketchObject.hasFixedRight() ? textSize.x + textSize.width : null
-  textSize.bottom = _layer.sketchObject.hasFixedBottom() ? textSize.y + textSize.height : null
+
+  textSize.top = _layer.sketchObject.hasFixedTop() ? textSize.y : null
+  textSize.bottom = _layer.sketchObject.hasFixedBottom() ? parentSize.height - (textSize.y + textSize.height) : null
 
   // Edges //FIXME texts are not being positioned correctly
   // if(_layer.sketchObject.hasFixedLeft()){}
