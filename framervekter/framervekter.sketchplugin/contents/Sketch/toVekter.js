@@ -672,14 +672,35 @@ function getFixedPosition(_layer,_parent){
   properties.centerAnchorX = ( childSize.x + (childSize.width/2) ) / parentSize.width
   properties.centerAnchorY = ( childSize.y + (childSize.height/2) ) / parentSize.height
 
-  properties.right    = _layer.sketchObject.hasFixedRight()   ? parentSize.width - (childSize.x + childSize.width) : null
-  properties.left     = _layer.sketchObject.hasFixedLeft()    ? childSize.x : null
-  properties.top      = _layer.sketchObject.hasFixedTop()     ? childSize.y : null
-  properties.bottom   = _layer.sketchObject.hasFixedBottom()  ? parentSize.height - (childSize.y + childSize.height) : null
+  debugger
 
   if( !properties.right && !properties.left && !properties.top && !properties.bottom ){
-    properties.x = childSize.x
-    properties.y = childSize.y
+    // properties.x = childSize.x
+    // properties.y = childSize.y
+
+    if(properties.centerAnchorX *  parentSize.width >  parentSize.width/2){
+      properties.right = parentSize.width - (childSize.x + childSize.width)
+      properties.left = null
+    }else{
+      properties.right = null
+      properties.left = childSize.x
+    }
+
+    if(properties.centerAnchorY *  parentSize.height >  parentSize.height/2){
+      properties.bottom = parentSize.height - (childSize.y + childSize.height)
+      properties.top = null
+    }else{
+      properties.bottom = null
+      properties.top = childSize.y
+    }
+
+  }else{
+
+    properties.right    = _layer.sketchObject.hasFixedRight()   ? parentSize.width - (childSize.x + childSize.width) : null
+    properties.left     = _layer.sketchObject.hasFixedLeft()    ? childSize.x : null
+    properties.top      = _layer.sketchObject.hasFixedTop()     ? childSize.y : null
+    properties.bottom   = _layer.sketchObject.hasFixedBottom()  ? parentSize.height - (childSize.y + childSize.height) : null
+
   }
 
   return properties
@@ -861,6 +882,9 @@ function createText(_layer,_parent,_properties){
 
 }
 
+function createComposedPath(_layer,_parent,_properties){
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////   SKETCH STYLING UTILITIES   //////////////////////////
