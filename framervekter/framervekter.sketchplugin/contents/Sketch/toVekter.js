@@ -256,77 +256,44 @@ function textLayerCode(layer) {
 ///////////////////   GET PROPERTIES FROM SKETCH LAYERS   //////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-function getShapeProperties(_obj,_parent){
+function getShapeProperties(_layer,_parent){
 
   var properties = {
     "id" : getUniqueIdentifyer("id"),
     "parentid" : _parent["id"],
-    "name" : _obj.sketchObject.name() + ""
+    "name" : _layer.sketchObject.name() + ""
   }
 
   return properties
 }
 
-function getFrameProperties(_obj,_parent){
+function getFrameProperties(_layer,_parent){
 
-  var name = _obj.sketchObject.name()
-  var frame = _obj.sketchObject.frame()
+  var properties = getShapeProperties(_layer,_parent)
+  properties = Object.assign(properties, getFixedPosition(_layer,_parent) )
+
+  var name = _layer.sketchObject.name()
+  var frame = _layer.sketchObject.frame()
   var openBraquet = name.indexOf("[")
   var closeBraquet = name.indexOf("]")
 
   //return false if string has duplicate braquets
-  if(name.substring(openBraquet,name.length).indexOf("[") != -1){
-    //error Message
-    return false
-
-    //return false if string has duplicate braquets
-  }else if(name.substring(closeBraquet,name.length).indexOf("]") != -1){
-    //error Message
-    return false
-
-    // Check if string have an open and a closing braquet
-  }else if(openBraquet != -1 && closeBraquet != -1){
+  if(openBraquet != -1 && closeBraquet != -1){
 
     //Check of string is well formed
     if (openBraquet < closeBraquet){
 
-      var properties = {
-        "name" : _obj.sketchObject.name().substring(0,openBraquet),
-        "children" : [],
-        "id" : getUniqueIdentifyer("id"),
-        "parentid" : _parent["id"],
+      Object.assign(properties, {
 
+        "children" : [],
         "clip" : false,
-        "top" : null,
-        "bottom" : null,
-        "left" : null,
-        "right" : null,
         "widthFactor" : null,
         "heightFactor" : null
-      }
+      })
 
       var propertiesStr = name.substring(openBraquet+1,closeBraquet)
 
       if(propertiesStr.indexOf("M") != -1){ properties.clip = true }
-
-      if(propertiesStr.indexOf("T") != -1){
-        //top null
-        properties.top = _obj.sketchObject.frame().y() + ""
-      }
-
-      if(propertiesStr.indexOf("B") != -1){
-        //bottom null
-        properties.bottom = _parent.height - _obj.sketchObject.frame().y() -  _obj.sketchObject.frame().height()
-      }
-
-      if(propertiesStr.indexOf("L") != -1){
-        properties.top = _obj.sketchObject.frame().x() + ""
-        //left  null
-      }
-
-      if(propertiesStr.indexOf("R") != -1){
-        //right  null
-      }
 
       if(propertiesStr.indexOf("W") != -1){
         //width factor null
@@ -342,26 +309,19 @@ function getFrameProperties(_obj,_parent){
   }else{
     //layer with no properties specifyed in the layer name
 
-    var properties = {
+    Object.assign(properties, {
       "children" : [],
-      "id" : getUniqueIdentifyer("id"),
-      "parentid" : _parent["id"],
-      "top" : null,
-      "bottom" : null,
-      "left" : null,
-      "right" : null,
       "widthFactor" : null,
       "heightFactor" : null,
       "clip" : false,
-      "name" : _obj.sketchObject.name() + ""
-    }
+    })
 
     return properties
   }
 
 }
 
-function getStyle(_obj,_parent,_properties){
+function getStyle(_layer,_parent,_properties){
 
   var properties = {}
 
@@ -369,7 +329,7 @@ function getStyle(_obj,_parent,_properties){
   // ////////////////// FILL ////////////////////////
   // ///////////////////////////////////////////////
 
-  var fills = _obj.sketchObject.style().enabledFills();
+  var fills = _layer.sketchObject.style().enabledFills();
 
   if(fills.length > 0){
 
@@ -383,7 +343,7 @@ function getStyle(_obj,_parent,_properties){
 
     }else if(fillType == 1){
       properties.fillEnabled = true;
-      properties.fillGradient = getGradient(_obj.sketchObject.style().enabledFills()[0].gradient().gradientStringWithMasterAlpha(0))
+      properties.fillGradient = getGradient(_layer.sketchObject.style().enabledFills()[0].gradient().gradientStringWithMasterAlpha(0))
       properties.fillType = "gradient"
     }
 
@@ -399,25 +359,25 @@ function getStyle(_obj,_parent,_properties){
   //------------------BORDER RADIUS
   var borderRadius,radiusBottomLeft,radiusBottomRight,radiusTopLeft,radiusTopRight;
 
-  if (isCircle(_obj.sketchObject)) {
+  if (isCircle(_layer.sketchObject)) {
     //if object is a circle:
 
-    // borderRadius = _obj.sketchObject.frame.width() / 2;
-    // radiusBottomLeft,radiusBottomRight,radiusTopLeft,radiusTopRight = _obj.sketchObject.frame.width() / 2;
+    // borderRadius = _layer.sketchObject.frame.width() / 2;
+    // radiusBottomLeft,radiusBottomRight,radiusTopLeft,radiusTopRight = _layer.sketchObject.frame.width() / 2;
 
   } else if(_properties.clip) {
     //if object is a mask
 
-    var rectObj = _obj.sketchObject.layers().firstObject().layers().firstObject()
+    var rectObj = _layer.sketchObject.layers().firstObject().layers().firstObject()
     radiusTopLeft = rectObj.path().points()[0].cornerRadius()
     radiusTopRight = rectObj.path().points()[1].cornerRadius()
     radiusBottomRight = rectObj.path().points()[2].cornerRadius()
     radiusBottomLeft = rectObj.path().points()[3].cornerRadius()
 
-  }else if(isRectangle(_obj.sketchObject)){
+  }else if(isRectangle(_layer.sketchObject)){
     //if object is a rectangle
 
-    var rectObj = _obj.sketchObject.layers().firstObject()
+    var rectObj = _layer.sketchObject.layers().firstObject()
     radiusTopLeft = rectObj.path().points()[0].cornerRadius()
     radiusTopRight = rectObj.path().points()[1].cornerRadius()
     radiusBottomRight = rectObj.path().points()[2].cornerRadius()
@@ -444,10 +404,10 @@ function getStyle(_obj,_parent,_properties){
 
   //---------------------BORDER STYLE
 
-  if(_obj.sketchObject.class() == MSShapeGroup || isRectangle(_obj.sketchObject) || isCircle(_obj.sketchObject)){
+  if(_layer.sketchObject.class() == MSShapeGroup || isRectangle(_layer.sketchObject) || isCircle(_layer.sketchObject)){
 
-    var border = _obj.sketchObject.style().enabledBorders().length > 0 ? _obj.sketchObject.style().enabledBorders()[0] : null
-    var borderOptions = _obj.sketchObject.style().borderOptions()
+    var border = _layer.sketchObject.style().enabledBorders().length > 0 ? _layer.sketchObject.style().enabledBorders()[0] : null
+    var borderOptions = _layer.sketchObject.style().borderOptions()
 
     if (border != null) {
 
@@ -482,8 +442,8 @@ function getStyle(_obj,_parent,_properties){
         "strokeColor" : rgbToHex(border.color()),
         "strokeDashArray" : "0",
         "strokeDashOffset" : 0,
-        "strokeEnabled" : _obj.sketchObject.style().borders()[0].isEnabled(),
-        "strokeMiterLimit" : _obj.sketchObject.style().miterLimit(),
+        "strokeEnabled" : _layer.sketchObject.style().borders()[0].isEnabled(),
+        "strokeMiterLimit" : _layer.sketchObject.style().miterLimit(),
         "strokeWidth" : border.thickness(),
       })
 
@@ -499,7 +459,7 @@ function getStyle(_obj,_parent,_properties){
 
   }else{
 
-    var border = getBorder(_obj.sketchObject.style());
+    var border = getBorder(_layer.sketchObject.style());
     if (border != null) {
       properties.borderColor = rgbToHex(border.color());
       properties.borderWidth = border.thickness();
@@ -515,7 +475,7 @@ function getStyle(_obj,_parent,_properties){
 
   properties.boxShadows = []
 
-  var shadow = _obj.sketchObject.style().enabledShadows();
+  var shadow = _layer.sketchObject.style().enabledShadows();
 
   if (shadow != null) {
 
@@ -541,7 +501,7 @@ function getStyle(_obj,_parent,_properties){
   // /////////////////////////////////////////////////
   // ////////////////// OPACITY /////////////////////
   // ///////////////////////////////////////////////
-  var opacity = _obj.sketchObject.style().contextSettings().opacity();
+  var opacity = _layer.sketchObject.style().contextSettings().opacity();
   if (opacity != 1) {
     properties.opacity = opacity;
   }
@@ -550,7 +510,7 @@ function getStyle(_obj,_parent,_properties){
 
 }
 
-function getTextStyle(_obj,_parent,_properties){
+function getTextStyle(_layer,_parent,_properties){
 
   var properties = {
     "styledText" : Object.assign({},framerModels.text.styledText)
@@ -563,11 +523,9 @@ function getTextStyle(_obj,_parent,_properties){
   blockModel.inlineStyleRanges = []
 
   //get all individual styles per segment of text
-  var atributes = _obj.sketchObject.attributedString().treeAsDictionary().value.attributes
+  var atributes = _layer.sketchObject.attributedString().treeAsDictionary().value.attributes
   var styleIndex = [0];
   var styles = [];
-
-  debugger
 
   for(var i = 0; i < atributes.length; i++){
 
@@ -619,7 +577,7 @@ function getTextStyle(_obj,_parent,_properties){
   }
 
   //arrange styles per line of text
-  var stringBlocks = _obj.sketchObject.stringValue().split("\n")
+  var stringBlocks = _layer.sketchObject.stringValue().split("\n")
   var blockIndex = [0];
   var blocks = [];
   var styleCount = 0
@@ -689,6 +647,39 @@ function getTextStyle(_obj,_parent,_properties){
 
     properties.styledText.blocks.push(newBLockCode)
 
+  }
+
+  return properties
+
+}
+
+function getFixedPosition(_layer,_parent){
+
+  var childSize = {
+    "width" : _layer.sketchObject.frame().width(),
+    "height" :  _layer.sketchObject.frame().height(),
+    "x" : _layer.sketchObject.frame().x(),
+    "y" : _layer.sketchObject.frame().y(),
+    "autoSize" : false
+  }
+
+  var parentSize = {
+    "width" : _parent.width,
+    "height" :  _parent.height
+  }
+
+  var properties = {}
+  properties.centerAnchorX = ( childSize.x + (childSize.width/2) ) / parentSize.width
+  properties.centerAnchorY = ( childSize.y + (childSize.height/2) ) / parentSize.height
+
+  properties.right    = _layer.sketchObject.hasFixedRight()   ? parentSize.width - (childSize.x + childSize.width) : null
+  properties.left     = _layer.sketchObject.hasFixedLeft()    ? childSize.x : null
+  properties.top      = _layer.sketchObject.hasFixedTop()     ? childSize.y : null
+  properties.bottom   = _layer.sketchObject.hasFixedBottom()  ? parentSize.height - (childSize.y + childSize.height) : null
+
+  if( !properties.right && !properties.left && !properties.top && !properties.bottom ){
+    properties.x = childSize.x
+    properties.y = childSize.y
   }
 
   return properties
@@ -836,10 +827,10 @@ function createPath(_layer,_parent,_properties){
 
 function createFrame(_layer,_parent,_properties){
 
+  debugger
+
   var newObj = Object.assign({}, framerModels.frame)
   newObj = Object.assign(newObj, {
-    "x" : _layer.sketchObject.frame().x(),
-    "y" : _layer.sketchObject.frame().y(),
     "width" : _layer.sketchObject.frame().width(),
     "height" : _layer.sketchObject.frame().height()
   })
@@ -851,44 +842,25 @@ function createFrame(_layer,_parent,_properties){
 
 function createText(_layer,_parent,_properties){
 
+  var newObj = Object.assign({}, framerModels.text)
+
   //get text center
-  var textSize = {
+  newObj = Object.assign(newObj ,{
     "width" : _layer.sketchObject.frame().width(),
     "height" :  _layer.sketchObject.frame().height(),
     "x" : _layer.sketchObject.frame().x(),
     "y" : _layer.sketchObject.frame().y(),
     "autoSize" : false
-  }
+  })
 
 
-  var parentSize = {
-    "width" : _parent.width,
-    "height" :  _parent.height
-  }
-
-  textSize.centerAnchorX = ( textSize.x + (textSize.width/2) ) / parentSize.width
-  textSize.centerAnchorY = ( textSize.y + (textSize.height/2) ) / parentSize.height
-
-  textSize.right = _layer.sketchObject.hasFixedRight() ? parentSize.width - (textSize.x + textSize.width) : null
-  textSize.left = _layer.sketchObject.hasFixedLeft() ? textSize.x : null
-
-  textSize.top = _layer.sketchObject.hasFixedTop() ? textSize.y : null
-  textSize.bottom = _layer.sketchObject.hasFixedBottom() ? parentSize.height - (textSize.y + textSize.height) : null
-
-  // Edges //FIXME texts are not being positioned correctly
-  // if(_layer.sketchObject.hasFixedLeft()){}
-  // if(_layer.sketchObject.hasFixedTop()){}
-
-
-  var newObj = Object.assign({}, framerModels.text)
   newObj = Object.assign(newObj, _properties)
   newObj = Object.assign(newObj,getTextStyle(_layer,_parent,_properties))
-  newObj = Object.assign(newObj, textSize)
+  newObj = Object.assign(newObj,getFixedPosition(_layer,_parent))
   _parent.children.push(newObj)
 
-
-
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////   SKETCH STYLING UTILITIES   //////////////////////////
