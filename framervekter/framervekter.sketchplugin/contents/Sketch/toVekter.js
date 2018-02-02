@@ -53,6 +53,14 @@ function onRun(context) {
     "id" : "ART"
   })
 
+  framerModels.path = Object.assign({}, originalVekter.root.children[0].children[0])
+  framerModels.pathSegment = framerModels.path.pathSegments[0]
+
+  framerModels.path = Object.assign(framerModels.path, {
+    "pathSegments" : [],
+    "id" : "PATH"
+  })
+
   framerModels.frame = Object.assign({}, originalVekter.root.children[0].children[1])
   framerModels.frame = Object.assign(framerModels.frame,{
     "children" : [],
@@ -65,19 +73,16 @@ function onRun(context) {
     "id" : "RECT"
   })
 
-  framerModels.path = Object.assign({}, originalVekter.root.children[0].children[0])
-  framerModels.pathSegment = framerModels.path.pathSegments[0]
-
-  framerModels.path = Object.assign(framerModels.path, {
-    "pathSegments" : [],
-    "id" : "PATH"
-  })
 
   framerModels.text = Object.assign({}, originalVekter.root.children[0].children[3])
   framerModels.text = Object.assign(framerModels.text, {
     "id" : "TEXT"
   })
 
+  framerModels.combinedPath = Object.assign({}, originalVekter.root.children[0].children[4])
+  framerModels.combinedPath = Object.assign(framerModels.combinedPath, {
+    "id" : "combinedPath"
+  })
 
 
   //add sketch layers to root
@@ -91,6 +96,7 @@ function onRun(context) {
 }
 
 function addFramerLayer(_layer, _parent) {
+
 
   //check if layers are visible and are not sliced
   if (_layer.sketchObject.isVisible() && _layer.sketchObject.class() != MSSliceLayer) {
@@ -114,9 +120,15 @@ function addFramerLayer(_layer, _parent) {
     ///////////////////////////////////////////////  SHAPES + PATH
     }else if(_layer.isShape){
 
+      debugger
+
       var properties = getShapeProperties(_layer,_parent))
 
-      if(_layer.sketchObject.layers()[0].class() == MSShapePathLayer){
+      if(_layer.sketchObject.layers().length > 0 && _layer.sketchObject.layers()[0].booleanOperation > 0 ){
+
+        createComposedPath(_layer,_parent,properties)
+
+      }else if(_layer.sketchObject.layers()[0].class() == MSShapePathLayer){
         createPath(_layer,_parent,properties)
 
       }else if (_layer.sketchObject.layers()[0].class() == MSRectangleShape){
@@ -883,6 +895,8 @@ function createText(_layer,_parent,_properties){
 }
 
 function createComposedPath(_layer,_parent,_properties){
+
+  var newObj = Object.assign({}, framerModels.combinedPath)
 
 }
 

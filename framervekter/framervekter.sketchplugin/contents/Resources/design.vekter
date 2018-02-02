@@ -20,7 +20,9 @@
         "borderTop" : 1,
         "borderWidth" : 1,
         "bottom" : null,
-        "boxShadows" : [],
+        "boxShadows" : [
+
+        ],
         "brightness" : 100,
         "brightnessEnabled" : 0,
         "centerAnchorX" : 0,
@@ -323,11 +325,11 @@
                 }
               ],
               "cached" : {
-                "html" : "<span data-offset-key=\"dkq3l-0-0\" style=\"tab-size:4;font-weight:400;font-family:&quot;SFUIText-Regular&quot;, &quot;SF UI Text&quot;, sans-serif;-webkit-text-fill-color:rgb(0, 0, 0);font-size:16px;letter-spacing:0px;line-height:1.2\"><span data-text=\"true\">Text<\/span><\/span>",
+                "html" : "<span data-offset-key=\"dkq3l-0-0\" style=\"tab-size:4;font-weight:400;font-family:&quot;SFUIText-Regular&quot;, sans-serif;-webkit-text-fill-color:rgb(0, 0, 0);font-size:16px;letter-spacing:0px;line-height:1.2\"><span data-text=\"true\">Text<\/span><\/span>",
                 "os" : "10_13",
                 "size" : {
                   "height" : 19,
-                  "width" : 33
+                  "width" : 31
                 },
                 "width" : 0
               },
@@ -339,9 +341,145 @@
             "top" : 0,
             "visible" : true,
             "width" : 33,
-            "widthFactor" : null,
-            "x" : 98,
-            "y" : 124
+            "widthFactor" : null
+          },
+          {
+            "__class" : "BooleanShapeNode",
+            "aspectRatioLocked" : false,
+            "boxShadows" : [
+
+            ],
+            "children" : [
+              {
+                "__class" : "RectangleShapeNode",
+                "aspectRatioLocked" : false,
+                "boxShadows" : [
+
+                ],
+                "exportOptions" : [
+
+                ],
+                "fillColor" : "#CCC",
+                "fillEnabled" : true,
+                "fillGradient" : {
+                  "__class" : "LinearGradient",
+                  "alpha" : 1,
+                  "angle" : 0,
+                  "end" : "rgba(0,0,0,0)",
+                  "start" : "black"
+                },
+                "fillType" : "color",
+                "height" : 50,
+                "id" : "XcsG4bouU",
+                "lineCap" : "butt",
+                "lineJoin" : "miter",
+                "locked" : false,
+                "name" : null,
+                "opacity" : 1,
+                "parentid" : "KhNkKTok5",
+                "radius" : 0,
+                "radiusBottomLeft" : 0,
+                "radiusBottomRight" : 0,
+                "radiusPerCorner" : false,
+                "radiusTopLeft" : 0,
+                "radiusTopRight" : 0,
+                "rotation" : 0,
+                "strokeAlignment" : "center",
+                "strokeColor" : "#0AF",
+                "strokeDashArray" : "0",
+                "strokeDashOffset" : 0,
+                "strokeEnabled" : 0,
+                "strokeMiterLimit" : 4,
+                "strokeWidth" : 1,
+                "targetName" : null,
+                "visible" : true,
+                "width" : 50,
+                "x" : 25,
+                "y" : 25
+              },
+              {
+                "__class" : "RectangleShapeNode",
+                "aspectRatioLocked" : false,
+                "boxShadows" : [
+
+                ],
+                "exportOptions" : [
+
+                ],
+                "fillColor" : "#CCC",
+                "fillEnabled" : true,
+                "fillGradient" : {
+                  "__class" : "LinearGradient",
+                  "alpha" : 1,
+                  "angle" : 0,
+                  "end" : "rgba(0,0,0,0)",
+                  "start" : "black"
+                },
+                "fillType" : "color",
+                "height" : 50,
+                "id" : "Hp5XTGONZ",
+                "lineCap" : "butt",
+                "lineJoin" : "miter",
+                "locked" : false,
+                "name" : null,
+                "opacity" : 1,
+                "parentid" : "KhNkKTok5",
+                "radius" : 0,
+                "radiusBottomLeft" : 0,
+                "radiusBottomRight" : 0,
+                "radiusPerCorner" : false,
+                "radiusTopLeft" : 0,
+                "radiusTopRight" : 0,
+                "rotation" : 0,
+                "strokeAlignment" : "center",
+                "strokeColor" : "#0AF",
+                "strokeDashArray" : "0",
+                "strokeDashOffset" : 0,
+                "strokeEnabled" : 0,
+                "strokeMiterLimit" : 4,
+                "strokeWidth" : 1,
+                "targetName" : null,
+                "visible" : true,
+                "width" : 50,
+                "x" : 0,
+                "y" : 0
+              }
+            ],
+            "exportOptions" : [
+
+            ],
+            "fillColor" : "#CCC",
+            "fillEnabled" : true,
+            "fillGradient" : {
+              "__class" : "LinearGradient",
+              "alpha" : 1,
+              "angle" : 0,
+              "end" : "rgba(0,0,0,0)",
+              "start" : "black"
+            },
+            "fillType" : "color",
+            "height" : 75,
+            "id" : "KhNkKTok5",
+            "lineCap" : "butt",
+            "lineJoin" : "miter",
+            "locked" : false,
+            "name" : null,
+            "opacity" : 1,
+            "parentid" : "kRmvHE2ir",
+            "pathBoolean" : 0,
+            "rotation" : 0,
+            "strokeAlignment" : "center",
+            "strokeColor" : "#0AF",
+            "strokeDashArray" : "0",
+            "strokeDashOffset" : 0,
+            "strokeEnabled" : 0,
+            "strokeMiterLimit" : 4,
+            "strokeWidth" : 1,
+            "targetName" : null,
+            "visible" : true,
+            "width" : 75,
+            "x" : 0,
+            "y" : 0
           }
         ],
         "clip" : true,
@@ -350,7 +488,9 @@
         "contrastEnabled" : 0,
         "deviceType" : "apple-iphone-8-space-gray",
         "exportIncludesBackground" : true,
-        "exportOptions" : [],
+        "exportOptions" : [
+
+        ],
         "fillColor" : "rgba(255,255,255,1)",
         "fillEnabled" : true,
         "fillGradient" : {
