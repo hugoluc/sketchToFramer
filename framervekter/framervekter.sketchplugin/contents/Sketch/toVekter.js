@@ -7,6 +7,7 @@ var globelIdentifyers = {
   "id" : "00000",
   "key" : "000"
 }
+
 var originalVekter,newRoot;
 var framerModels = {};
 
@@ -118,8 +119,6 @@ function addFramerLayer(_layer, _parent) {
 
     ///////////////////////////////////////////////  SHAPES + PATH
     }else if(_layer.isShape){
-
-      debugger
 
       var properties = getShapeProperties(_layer,_parent))
 
@@ -734,6 +733,55 @@ function getPosAndSize(_layer,resetChildren){
   return properties
 
 }
+
+function getFrameFromLayers(_layer1, _layer2){
+
+  var _properties = {}
+
+  l01Frame = _layer1.frame ? _layer1.frame() : _layer1
+  l02Frame = _layer2.frame ? _layer2.frame() : _layer2
+
+  var L01Pos = {
+    "x" :       _layer1.frame ? _layer1.frame().x()       : _layer1.x,
+    "y" :       _layer1.frame ? _layer1.frame().y()       : _layer1.y,
+    "width" :   _layer1.frame ? _layer1.frame().width()   : _layer1.width,
+    "height" :  _layer1.frame ? _layer1.frame().height()  : _layer1.height
+  }
+
+  var L02Pos = {
+    "x" :       _layer2.frame ? _layer2.frame().x()       : _layer2.x,
+    "y" :       _layer2.frame ? _layer2.frame().y()       : _layer2.y,
+    "width" :   _layer2.frame ? _layer2.frame().width()   : _layer2.width,
+    "height" :  _layer2.frame ? _layer2.frame().height()  : _layer2.height
+  }
+
+  if(L01Pos.x < L02Pos.x){
+    //L01 on the left
+    _properties.x = L01Pos.x
+    _properties.width = (L02Pos.x + L02Pos.width) - L01Pos.x
+
+  }else{
+    //L02 on the left
+    _properties.x = L02Pos.x
+    _properties.width = (L01Pos.x + L01Pos.width) - L02Pos.x
+  }
+
+  if(L01Pos.y < L02Pos.y){
+    //L01 on the left
+    _properties.x = L01Pos.y
+    _properties.height = (L02Pos.y + L02Pos.height) - L01Pos.y
+
+  }else{
+    //L02 on the left
+    _properties.x = L02Pos.y
+    _properties.height = (L01Pos.y + L01Pos.height) - L02Pos.y
+
+  }
+
+  return _properties
+
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////   ADD FRAMER OBJ FROM MODELS  /////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -784,7 +832,6 @@ function createRectangle(_layer,_parent,_properties){
 function createPath(_layer,_parent,_properties){
 
   //FIXME add suport to dashed
-  debugger
 
   var newObj = Object.assign({}, framerModels.path)
 
@@ -911,65 +958,119 @@ function createText(_layer,_parent,_properties){
 
 function createComposedPath(_layer,_parent,_properties){
 
-  debugger
+  var subLayers = _layer.sketchObject.layers()
+  var lastLayer = subLayers[0]
+  var secondToLastLayer = subLayers[1]
 
-  var firstParent =  Object.assign({}, framerModels.combinedPath)
-  firstParent = Object.assign(firstParent,_properties)
-  firstParent = Object.assign(firstParent, {
+  var allParents = []
+
+  var lastParent =  Object.assign({}, framerModels.combinedPath)
+  lastParent = Object.assign(lastParent, _properties)
+  lastParent = Object.assign(lastParent, getFrameFromLayers(lastLayer,secondToLastLayer))
+  lastParent = Object.assign(lastParent, {
     "x" : _layer.sketchObject.frame().x(),
     "y" : _layer.sketchObject.frame().y(),
-    "width" : _layer.sketchObject.frame().width(),
-    "height" : _layer.sketchObject.frame().height(),
+    "name" : secondToLastLayer.name() + "-Group",
     "children" : []
   })
 
-  var allSpecs = []
-  for (var i = 0; i < _layer.sketchObject.layers().length; i++) {
-    _layer.sketchObject.layers()[i].frame().x
-    _layer.sketchObject.layers()[i].frame().y
-    _layer.sketchObject.layers()[i].frame().width
-    _layer.sketchObject.layers()[i].frame().heigh
-  }
+  allParents.push(lastParent)
 
-  addLayer(firstParent,_layer.sketchObject.layers().length-1)
+  var lastChild = createPath(lastLayer,lastParent,getShapeProperties(lastLayer,lastParent))
+  lastParent.children.push(lastChild)
 
-  function addLayer(__parent,childrenIndex){
+  var secondToLastChild = createPath(secondToLastLayer,lastParent,getShapeProperties(secondToLastLayer,lastParent))
+  lastParent.children.push(secondToLastChild)
 
-    //create child and set parentId
-    var nextChild = createPath(_layer.sketchObject.layers()[childrenIndex],__parent,_properties)
-    nextChild = Object.assign(nextChild,getShapeProperties(_layer.sketchObject.layers()[childrenIndex],__parent))
-    __parent.children.push(nextChild)
+  debugger
 
-    // check if there is no need to create another parent
-    if(childrenIndex == 1){
+  if(subLayers.length > 2){
 
-      var lastChild = createPath(_layer.sketchObject.layers()[childrenIndex-1],__parent,_properties)
-      lastChild = Object.assign(lastChild,getShapeProperties(_layer.sketchObject.layers()[childrenIndex-1],__parent))
-      __parent.children.push(lastChild)
+    for (var i = 0; i <subLayers.length-2; i++) {
 
-    }else{
+      //get new layer in line
+      var nextLayer = subLayers[2+i]
 
-      var nextParent =  Object.assign({}, framerModels.combinedPath)
-      nextParent = Object.assign(nextParent,{
-        "x" : _layer.sketchObject.frame().x(),
-        "y" : _layer.sketchObject.frame().y(),
-        "width" : _layer.sketchObject.frame().width(),
-        "height" : _layer.sketchObject.frame().height(),
-        "children" : [],
+      //create parent based on new layer
+      var nextParent = Object.assign({}, framerModels.combinedPath)
+      nextParent = Object.assign(nextParent, {
         "id" : getUniqueIdentifyer("id"),
-        "parentid" : __parent["id"],
-        "name" : _layer.sketchObject.name() + "_Group"
+        "name" : nextLayer.name() + "-Group",
+        "children" : []
       })
 
-      __parent.children.push(nextParent)
+      //create frame based on previous parent and current layer
+      nextParent = Object.assign(nextParent, getFrameFromLayers(nextLayer,allParents[i]))
+      allParents.push(nextParent)
 
-      addLayer(nextParent,childrenIndex-1)
+      //add last parent as child and set correct parentdd
+      nextParent.children.push(allParents[i])
+      allParents[i].parentid = nextParent["id"]
+
+      //create next child
+      var nextChild = createPath( nextLayer, allParents[allParents.length-1], getShapeProperties(nextLayer, allParents[allParents.length-1]) )
+      allParents[i].parentid = nextParent["id"]
+      allParents[allParents.length-1].children.push(lastChild)
 
     }
 
   }
 
-  _parent.children.push(firstParent)
+  //Combined    id.00005  //  p.00001
+  //00          id.00006  //  p.00006
+  //01-group    id.00002  //  p.0005
+  //01          id.00003  //  p.0002
+  //02          id.00004  //  p.0002
+
+
+  allParents[allParents.length-1].name = _properties.name
+  allParents[allParents.length-1].parentid = _parent["id"]
+
+
+  _parent.children.push(allParents[allParents.length-1])
+
+  // debugger
+  //
+  // addLayer(firstParent,_layer.sketchObject.layers().length-1)
+  //
+  // function addLayer(__parent,childrenIndex){
+  //
+  //   //create child and set parentId
+  //   var nextChild = createPath(_layer.sketchObject.layers()[childrenIndex],__parent,_properties)
+  //   nextChild = Object.assign(nextChild,getShapeProperties(_layer.sketchObject.layers()[childrenIndex],__parent))
+  //   __parent.children.push(nextChild)
+  //
+  //   // check if there is no need to create another parent
+  //   if(childrenIndex == 1){
+  //
+  //     var lastChild = createPath(_layer.sketchObject.layers()[childrenIndex-1],__parent,_properties)
+  //     lastChild = Object.assign(lastChild,getShapeProperties(_layer.sketchObject.layers()[childrenIndex-1],__parent))
+  //     __parent.children.push(lastChild)
+  //
+  //   }else{
+  //
+  //     var nextParent =  Object.assign({}, framerModels.combinedPath)
+  //     nextParent = Object.assign(nextParent,{
+  //       "x" : _layer.sketchObject.frame().x(),
+  //       "y" : _layer.sketchObject.frame().y(),
+  //       "width" : _layer.sketchObject.frame().width(),
+  //       "height" : _layer.sketchObject.frame().height(),
+  //       "children" : [],
+  //       "id" : getUniqueIdentifyer("id"),
+  //       "parentid" : __parent["id"],
+  //       "name" : _layer.sketchObject.name() + "_Group"
+  //     })
+  //
+  //     __parent.children.push(nextParent)
+  //
+  //     addLayer(nextParent,childrenIndex-1)
+  //
+  //   }
+  //
+  // }
+  //
+  // _parent.children.push(firstParent)
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
