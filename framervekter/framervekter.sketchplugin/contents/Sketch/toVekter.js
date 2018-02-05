@@ -97,7 +97,6 @@ function onRun(context) {
 
 function addFramerLayer(_layer, _parent) {
 
-
   //check if layers are visible and are not sliced
   if (_layer.sketchObject.isVisible() && _layer.sketchObject.class() != MSSliceLayer) {
 
@@ -124,7 +123,7 @@ function addFramerLayer(_layer, _parent) {
 
       var properties = getShapeProperties(_layer,_parent))
 
-      if(_layer.sketchObject.layers().length > 0 && _layer.sketchObject.layers()[0].booleanOperation > 0 ){
+      if(_layer.sketchObject.layers().length > 0 && _layer.sketchObject.layers()[_layer.sketchObject.layers().length-1].booleanOperation() > -1 ){
 
         createComposedPath(_layer,_parent,properties)
 
@@ -273,7 +272,7 @@ function getShapeProperties(_layer,_parent){
   var properties = {
     "id" : getUniqueIdentifyer("id"),
     "parentid" : _parent["id"],
-    "name" : _layer.sketchObject.name() + ""
+    "name" : _layer.sketchObject ? _layer.sketchObject.name() + "" : _layer.name() + ""
   }
 
   return properties
@@ -336,12 +335,13 @@ function getFrameProperties(_layer,_parent){
 function getStyle(_layer,_parent,_properties){
 
   var properties = {}
+  var layer = _layer.sketchObject ? _layer.sketchObject : _layer
 
   // /////////////////////////////////////////////////
   // ////////////////// FILL ////////////////////////
   // ///////////////////////////////////////////////
 
-  var fills = _layer.sketchObject.style().enabledFills();
+  var fills = layer.style().enabledFills();
 
   if(fills.length > 0){
 
@@ -355,7 +355,7 @@ function getStyle(_layer,_parent,_properties){
 
     }else if(fillType == 1){
       properties.fillEnabled = true;
-      properties.fillGradient = getGradient(_layer.sketchObject.style().enabledFills()[0].gradient().gradientStringWithMasterAlpha(0))
+      properties.fillGradient = getGradient(layer.style().enabledFills()[0].gradient().gradientStringWithMasterAlpha(0))
       properties.fillType = "gradient"
     }
 
@@ -371,25 +371,25 @@ function getStyle(_layer,_parent,_properties){
   //------------------BORDER RADIUS
   var borderRadius,radiusBottomLeft,radiusBottomRight,radiusTopLeft,radiusTopRight;
 
-  if (isCircle(_layer.sketchObject)) {
+  if (isCircle(layer)) {
     //if object is a circle:
 
-    // borderRadius = _layer.sketchObject.frame.width() / 2;
-    // radiusBottomLeft,radiusBottomRight,radiusTopLeft,radiusTopRight = _layer.sketchObject.frame.width() / 2;
+    // borderRadius = layer.frame.width() / 2;
+    // radiusBottomLeft,radiusBottomRight,radiusTopLeft,radiusTopRight = layer.frame.width() / 2;
 
   } else if(_properties.clip) {
     //if object is a mask
 
-    var rectObj = _layer.sketchObject.layers().firstObject().layers().firstObject()
+    var rectObj = layer.layers().firstObject().layers().firstObject()
     radiusTopLeft = rectObj.path().points()[0].cornerRadius()
     radiusTopRight = rectObj.path().points()[1].cornerRadius()
     radiusBottomRight = rectObj.path().points()[2].cornerRadius()
     radiusBottomLeft = rectObj.path().points()[3].cornerRadius()
 
-  }else if(isRectangle(_layer.sketchObject)){
+  }else if(isRectangle(layer)){
     //if object is a rectangle
 
-    var rectObj = _layer.sketchObject.layers().firstObject()
+    var rectObj = layer.layers().firstObject()
     radiusTopLeft = rectObj.path().points()[0].cornerRadius()
     radiusTopRight = rectObj.path().points()[1].cornerRadius()
     radiusBottomRight = rectObj.path().points()[2].cornerRadius()
@@ -416,10 +416,10 @@ function getStyle(_layer,_parent,_properties){
 
   //---------------------BORDER STYLE
 
-  if(_layer.sketchObject.class() == MSShapeGroup || isRectangle(_layer.sketchObject) || isCircle(_layer.sketchObject)){
+  if(layer.class() == MSShapeGroup || isRectangle(layer) || isCircle(layer)){
 
-    var border = _layer.sketchObject.style().enabledBorders().length > 0 ? _layer.sketchObject.style().enabledBorders()[0] : null
-    var borderOptions = _layer.sketchObject.style().borderOptions()
+    var border = layer.style().enabledBorders().length > 0 ? layer.style().enabledBorders()[0] : null
+    var borderOptions = layer.style().borderOptions()
 
     if (border != null) {
 
@@ -454,8 +454,8 @@ function getStyle(_layer,_parent,_properties){
         "strokeColor" : rgbToHex(border.color()),
         "strokeDashArray" : "0",
         "strokeDashOffset" : 0,
-        "strokeEnabled" : _layer.sketchObject.style().borders()[0].isEnabled(),
-        "strokeMiterLimit" : _layer.sketchObject.style().miterLimit(),
+        "strokeEnabled" : layer.style().borders()[0].isEnabled(),
+        "strokeMiterLimit" : layer.style().miterLimit(),
         "strokeWidth" : border.thickness(),
       })
 
@@ -471,7 +471,7 @@ function getStyle(_layer,_parent,_properties){
 
   }else{
 
-    var border = getBorder(_layer.sketchObject.style());
+    var border = getBorder(layer.style());
     if (border != null) {
       properties.borderColor = rgbToHex(border.color());
       properties.borderWidth = border.thickness();
@@ -487,7 +487,7 @@ function getStyle(_layer,_parent,_properties){
 
   properties.boxShadows = []
 
-  var shadow = _layer.sketchObject.style().enabledShadows();
+  var shadow = layer.style().enabledShadows();
 
   if (shadow != null) {
 
@@ -513,7 +513,7 @@ function getStyle(_layer,_parent,_properties){
   // /////////////////////////////////////////////////
   // ////////////////// OPACITY /////////////////////
   // ///////////////////////////////////////////////
-  var opacity = _layer.sketchObject.style().contextSettings().opacity();
+  var opacity = layer.style().contextSettings().opacity();
   if (opacity != 1) {
     properties.opacity = opacity;
   }
@@ -684,7 +684,6 @@ function getFixedPosition(_layer,_parent){
   properties.centerAnchorX = ( childSize.x + (childSize.width/2) ) / parentSize.width
   properties.centerAnchorY = ( childSize.y + (childSize.height/2) ) / parentSize.height
 
-  debugger
 
   if( !properties.right && !properties.left && !properties.top && !properties.bottom ){
     // properties.x = childSize.x
@@ -719,21 +718,25 @@ function getFixedPosition(_layer,_parent){
 
 }
 
+function getPosAndSize(_layer,resetChildren){
+
+  sketchObject = _layer.sketchObject ? _layer.sketchObject : _layer
+
+  var properties = {
+    "x" : sketchObject.frame().x(),
+    "y" : sketchObject.frame().y(),
+    "width" : sketchObject.frame().width(),
+    "height" : sketchObject.frame().height(),
+  }
+
+  if(resetChildren){ properties.children = [] }
+
+  return properties
+
+}
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////   ADD FRAMER OBJ FROM MODELS  /////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-
-function hexToRGB(hex, alpha) {
-    var r = parseInt(hex.slice(1, 3), 16),
-        g = parseInt(hex.slice(3, 5), 16),
-        b = parseInt(hex.slice(5, 7), 16);
-
-    if (alpha) {
-        return "rgba(" + r + ", " + g + ", " + b + ", " + alpha + ")";
-    } else {
-        return "rgb(" + r + ", " + g + ", " + b + ")";
-    }
-}
 
 function createCanvas(_layer,_parent,_properties){
 
@@ -781,16 +784,17 @@ function createRectangle(_layer,_parent,_properties){
 function createPath(_layer,_parent,_properties){
 
   //FIXME add suport to dashed
+  debugger
 
   var newObj = Object.assign({}, framerModels.path)
 
-  var pathObj =  _layer.sketchObject.layers()[0]
+  var pathObj =  _layer.sketchObject ? _layer.sketchObject.layers()[0] : _layer
   var points = pathObj.path().points()
   var pathSegments = []
 
   var pathFrame = {
-    "x" : parseFloat((pathObj.frame().x()).toFixed(3)),
-    "y" : parseFloat((pathObj.frame().y()).toFixed(3)),
+    "x" : 0,//parseFloat((pathObj.frame().x()).toFixed(3)),
+    "y" : 0,//parseFloat((pathObj.frame().y()).toFixed(3)),
     "height" : parseFloat((pathObj.frame().height()).toFixed(3)),
     "width" : parseFloat((pathObj.frame().width()).toFixed(3))
   }
@@ -798,22 +802,22 @@ function createPath(_layer,_parent,_properties){
   for (var i = 0; i < points.length; i++) {
 
     var newSegment = Object.assign({}, framerModels.pathSegment)
-    var pathX = parseFloat(pathFrame.x + ( pathFrame.width * points[i].point().x).toFixed(3))
-    var pathY = parseFloat(pathFrame.y + ( pathFrame.height * points[i].point().y).toFixed(3))
+    var pathX = parseFloat(pathFrame.x + parseFloat(( pathFrame.width * points[i].point().x).toFixed(3)))
+    var pathY = parseFloat(pathFrame.y + parseFloat(( pathFrame.height * points[i].point().y).toFixed(3)))
     var pointGlobalPos = {
 
       "x" : pathX,
       "y" : pathY,
 
-      "handleInX" : parseFloat((pathFrame.x + ( pathFrame.width * points[i].curveTo().x) - pathX).toFixed(3)),
-      "handleInY" : parseFloat((pathFrame.y + ( pathFrame.height * points[i].curveTo().y) - pathY).toFixed(3)),
+      "handleInX" : parseFloat((pathFrame.x + parseFloat(( pathFrame.width * points[i].curveTo().x) - pathX).toFixed(3))),
+      "handleInY" : parseFloat((pathFrame.y + parseFloat(( pathFrame.height * points[i].curveTo().y) - pathY).toFixed(3))),
 
-      "handleOutX" : parseFloat((pathFrame.x + ( pathFrame.width * points[i].curveFrom().x) - pathX).toFixed(3)),
-      "handleOutY" : parseFloat((pathFrame.y + ( pathFrame.height * points[i].curveFrom().y) - pathY).toFixed(3)),
+      "handleOutX" : parseFloat((pathFrame.x + parseFloat(( pathFrame.width * points[i].curveFrom().x) - pathX).toFixed(3))),
+      "handleOutY" : parseFloat((pathFrame.y + parseFloat(( pathFrame.height * points[i].curveFrom().y) - pathY).toFixed(3))),
 
     }
 
-    if(_layer.sketchObject.layers()[0].class() == MSRectangleShape){
+    if(_layer.isShape && _layer.sketchObject.layers()[0].class() == MSRectangleShape){
       pointGlobalPos.cornerRadius = points[i].point().cornerRadius
     }
 
@@ -838,29 +842,40 @@ function createPath(_layer,_parent,_properties){
 
   }
 
-  if(!pathObj.path().isClosed()){
-    _properties.pathClosed = false
+  if(_layer.isShape){
+
+    if(!pathObj.path().isClosed()){
+      _properties =  Object.assign(_properties, { "pathClosed" : false })
+    }else{
+      _properties =  Object.assign(_properties, { "pathClosed" : true })
+    }
+
   }else{
-    _properties.pathClosed = true
+    _properties =  Object.assign(_properties, {  "pathClosed" : true })
   }
 
+  var pathFrame = _layer.isShape ? _layer.sketchObject.frame() : _layer.frame()
+
   newObj = Object.assign(newObj, {
-    "x" : _layer.sketchObject.frame().x(),
-    "y" : _layer.sketchObject.frame().y(),
-    "width" : _layer.sketchObject.frame().width(),
-    "height" : _layer.sketchObject.frame().height()
+    "x" : pathFrame.x(),
+    "y" : pathFrame.y(),
+    "width" : pathFrame.width(),
+    "height" : pathFrame.height()
   })
   newObj = Object.assign(newObj, { "pathSegments" : pathSegments })
   newObj = Object.assign(newObj,_properties)
-  newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties))
 
-  _parent.children.push(newObj)
+  if(_layer.sketchObject){
+    _parent.children.push(newObj)
+    newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties))
+  }else{
+    return newObj
+  }
+
 
 }
 
 function createFrame(_layer,_parent,_properties){
-
-  debugger
 
   var newObj = Object.assign({}, framerModels.frame)
   newObj = Object.assign(newObj, {
@@ -896,8 +911,65 @@ function createText(_layer,_parent,_properties){
 
 function createComposedPath(_layer,_parent,_properties){
 
-  var newObj = Object.assign({}, framerModels.combinedPath)
+  debugger
 
+  var firstParent =  Object.assign({}, framerModels.combinedPath)
+  firstParent = Object.assign(firstParent,_properties)
+  firstParent = Object.assign(firstParent, {
+    "x" : _layer.sketchObject.frame().x(),
+    "y" : _layer.sketchObject.frame().y(),
+    "width" : _layer.sketchObject.frame().width(),
+    "height" : _layer.sketchObject.frame().height(),
+    "children" : []
+  })
+
+  var allSpecs = []
+  for (var i = 0; i < _layer.sketchObject.layers().length; i++) {
+    _layer.sketchObject.layers()[i].frame().x
+    _layer.sketchObject.layers()[i].frame().y
+    _layer.sketchObject.layers()[i].frame().width
+    _layer.sketchObject.layers()[i].frame().heigh
+  }
+
+  addLayer(firstParent,_layer.sketchObject.layers().length-1)
+
+  function addLayer(__parent,childrenIndex){
+
+    //create child and set parentId
+    var nextChild = createPath(_layer.sketchObject.layers()[childrenIndex],__parent,_properties)
+    nextChild = Object.assign(nextChild,getShapeProperties(_layer.sketchObject.layers()[childrenIndex],__parent))
+    __parent.children.push(nextChild)
+
+    // check if there is no need to create another parent
+    if(childrenIndex == 1){
+
+      var lastChild = createPath(_layer.sketchObject.layers()[childrenIndex-1],__parent,_properties)
+      lastChild = Object.assign(lastChild,getShapeProperties(_layer.sketchObject.layers()[childrenIndex-1],__parent))
+      __parent.children.push(lastChild)
+
+    }else{
+
+      var nextParent =  Object.assign({}, framerModels.combinedPath)
+      nextParent = Object.assign(nextParent,{
+        "x" : _layer.sketchObject.frame().x(),
+        "y" : _layer.sketchObject.frame().y(),
+        "width" : _layer.sketchObject.frame().width(),
+        "height" : _layer.sketchObject.frame().height(),
+        "children" : [],
+        "id" : getUniqueIdentifyer("id"),
+        "parentid" : __parent["id"],
+        "name" : _layer.sketchObject.name() + "_Group"
+      })
+
+      __parent.children.push(nextParent)
+
+      addLayer(nextParent,childrenIndex-1)
+
+    }
+
+  }
+
+  _parent.children.push(firstParent)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -988,6 +1060,18 @@ function getFontStyle(layer) {
 }
 
 //////////////////////////////////////////////////////////
+
+function hexToRGB(hex, alpha) {
+    var r = parseInt(hex.slice(1, 3), 16),
+        g = parseInt(hex.slice(3, 5), 16),
+        b = parseInt(hex.slice(5, 7), 16);
+
+    if (alpha) {
+        return "rgba(" + r + ", " + g + ", " + b + ", " + alpha + ")";
+    } else {
+        return "rgb(" + r + ", " + g + ", " + b + ")";
+    }
+}
 
 function rgbaToHsl(_colorString) {
 
