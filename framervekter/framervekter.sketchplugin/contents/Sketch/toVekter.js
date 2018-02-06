@@ -839,11 +839,22 @@ function createPath(_layer,_parent,_properties){
   var points = pathObj.path().points()
   var pathSegments = []
 
-  var pathFrame = {
-    "x" : 0,//parseFloat((pathObj.frame().x()).toFixed(3)),
-    "y" : 0,//parseFloat((pathObj.frame().y()).toFixed(3)),
-    "height" : parseFloat((pathObj.frame().height()).toFixed(3)),
-    "width" : parseFloat((pathObj.frame().width()).toFixed(3))
+  if(_layer.isShape){
+
+    var pathFrame = {
+      "x" : parseFloat((pathObj.frame().x()).toFixed(3)),
+      "y" : parseFloat((pathObj.frame().y()).toFixed(3)),
+      "height" : parseFloat((pathObj.frame().height()).toFixed(3)),
+      "width" : parseFloat((pathObj.frame().width()).toFixed(3))
+    }
+
+  }else{
+    var pathFrame = {
+      "x" : 0,
+      "y" : 0,
+      "height" : parseFloat((pathObj.frame().height()).toFixed(3)),
+      "width" : parseFloat((pathObj.frame().width()).toFixed(3))
+    }
   }
 
   for (var i = 0; i < points.length; i++) {
@@ -856,11 +867,11 @@ function createPath(_layer,_parent,_properties){
       "x" : pathX,
       "y" : pathY,
 
-      "handleInX" : parseFloat((pathFrame.x + parseFloat(( pathFrame.width * points[i].curveTo().x) - pathX).toFixed(3))),
-      "handleInY" : parseFloat((pathFrame.y + parseFloat(( pathFrame.height * points[i].curveTo().y) - pathY).toFixed(3))),
+      "handleInX" : parseFloat((pathFrame.x + ( pathFrame.width * points[i].curveTo().x) - pathX).toFixed(3)),
+      "handleInY" : parseFloat((pathFrame.y + ( pathFrame.height * points[i].curveTo().y) - pathY).toFixed(3)),
 
-      "handleOutX" : parseFloat((pathFrame.x + parseFloat(( pathFrame.width * points[i].curveFrom().x) - pathX).toFixed(3))),
-      "handleOutY" : parseFloat((pathFrame.y + parseFloat(( pathFrame.height * points[i].curveFrom().y) - pathY).toFixed(3))),
+      "handleOutX" : parseFloat((pathFrame.x + ( pathFrame.width * points[i].curveFrom().x) - pathX).toFixed(3)),
+      "handleOutY" : parseFloat((pathFrame.y + ( pathFrame.height * points[i].curveFrom().y) - pathY).toFixed(3)),
 
     }
 
@@ -898,7 +909,9 @@ function createPath(_layer,_parent,_properties){
     }
 
   }else{
+
     _properties =  Object.assign(_properties, {  "pathClosed" : true })
+
   }
 
   var pathFrame = _layer.isShape ? _layer.sketchObject.frame() : _layer.frame()
@@ -1010,7 +1023,7 @@ function createComposedPath(_layer,_parent,_properties){
       //create next child
       var nextChild = createPath( nextLayer, allParents[allParents.length-1], getShapeProperties(nextLayer, allParents[allParents.length-1]) )
       allParents[i].parentid = nextParent["id"]
-      allParents[allParents.length-1].children.push(lastChild)
+      allParents[allParents.length-1].children.push(nextChild)
 
     }
 
