@@ -120,6 +120,8 @@ function addFramerLayer(_layer, _parent) {
     ///////////////////////////////////////////////  SHAPES + PATH
     }else if(_layer.isShape){
 
+      debugger
+
       var properties = getShapeProperties(_layer,_parent))
 
       if(_layer.sketchObject.layers().length > 0 && _layer.sketchObject.layers()[_layer.sketchObject.layers().length-1].booleanOperation() > -1 ){
@@ -768,12 +770,12 @@ function getFrameFromLayers(_layer1, _layer2){
 
   if(L01Pos.y < L02Pos.y){
     //L01 on the left
-    _properties.x = L01Pos.y
+    _properties.y = L01Pos.y
     _properties.height = (L02Pos.y + L02Pos.height) - L01Pos.y
 
   }else{
     //L02 on the left
-    _properties.x = L02Pos.y
+    _properties.y = L02Pos.y
     _properties.height = (L01Pos.y + L01Pos.height) - L02Pos.y
 
   }
@@ -981,21 +983,26 @@ function createComposedPath(_layer,_parent,_properties){
   lastParent = Object.assign(lastParent, _properties)
   lastParent = Object.assign(lastParent, getFrameFromLayers(lastLayer,secondToLastLayer))
   lastParent = Object.assign(lastParent, {
-    "x" : _layer.sketchObject.frame().x(),
-    "y" : _layer.sketchObject.frame().y(),
+    "x" : lastParent.x - _layer.sketchObject.frame().x(),
+    "y" : lastParent.y - _layer.sketchObject.frame().y(),
     "name" : secondToLastLayer.name() + "-Group",
     "children" : []
   })
-
   allParents.push(lastParent)
 
   var lastChild = createPath(lastLayer,lastParent,getShapeProperties(lastLayer,lastParent))
+  lastChild = Object.assign(lastChild, {
+    "x" : lastLayer.frame().x() - lastParent.x,
+    "y" : lastLayer.frame().y() - lastParent.y,
+  })
   lastParent.children.push(lastChild)
 
   var secondToLastChild = createPath(secondToLastLayer,lastParent,getShapeProperties(secondToLastLayer,lastParent))
+  secondToLastChild = Object.assign(secondToLastChild, {
+    "x" : secondToLastLayer.frame().x() - lastParent.x,
+    "y" : secondToLastLayer.frame().y() - lastParent.y,
+  })
   lastParent.children.push(secondToLastChild)
-
-  debugger
 
   if(subLayers.length > 2){
 
@@ -1016,9 +1023,10 @@ function createComposedPath(_layer,_parent,_properties){
       nextParent = Object.assign(nextParent, getFrameFromLayers(nextLayer,allParents[i]))
       allParents.push(nextParent)
 
-      //add last parent as child and set correct parentdd
+      //set correct data for previous parent
       nextParent.children.push(allParents[i])
       allParents[i].parentid = nextParent["id"]
+
 
       //create next child
       var nextChild = createPath( nextLayer, allParents[allParents.length-1], getShapeProperties(nextLayer, allParents[allParents.length-1]) )
@@ -1029,60 +1037,27 @@ function createComposedPath(_layer,_parent,_properties){
 
   }
 
-  //Combined    id.00005  //  p.00001
-  //00          id.00006  //  p.00006
-  //01-group    id.00002  //  p.0005
-  //01          id.00003  //  p.0002
-  //02          id.00004  //  p.0002
+  //Combined    id.00005  //  p.00001   -- nextParent             00,00 // 00,00   -> 00,00
+  //00          id.00006  //  p.00006   -- nextLayer              00,00 // 00,00   -> 00,00
+  //01-group    id.00002  //  p.0005    -- lastParent             00,10 // --,--   -> 00,00
+  //01          id.00004  //  p.0002    -- secondToLastChild      00,00 // 00,10   -> 00,10 *
+  //02          id.00003  //  p.0002    -- lastChild              00,10 // 00,20   -> 00,20 *
 
 
-  allParents[allParents.length-1].name = _properties.name
-  allParents[allParents.length-1].parentid = _parent["id"]
+  var firstParent = allParents[allParents.length-1]
+  firstParent.name = _properties.name
+  firstParent.parentid = _parent["id"]
+  firstParent.x = _layer.sketchObject.frame().x(),
+  firstParent.y = _layer.sketchObject.frame().y(),
+  firstParent.width = _layer.sketchObject.frame().width(),
+  firstParent.height = _layer.sketchObject.frame().height(),
 
+  _parent.children.push(firstParent)
 
-  _parent.children.push(allParents[allParents.length-1])
+  console.log(allParents[0].name,allParents[0].x,allParents[0].y)
+  console.log(allParents[1].name,allParents[1].x,allParents[1].y)
 
-  // debugger
-  //
-  // addLayer(firstParent,_layer.sketchObject.layers().length-1)
-  //
-  // function addLayer(__parent,childrenIndex){
-  //
-  //   //create child and set parentId
-  //   var nextChild = createPath(_layer.sketchObject.layers()[childrenIndex],__parent,_properties)
-  //   nextChild = Object.assign(nextChild,getShapeProperties(_layer.sketchObject.layers()[childrenIndex],__parent))
-  //   __parent.children.push(nextChild)
-  //
-  //   // check if there is no need to create another parent
-  //   if(childrenIndex == 1){
-  //
-  //     var lastChild = createPath(_layer.sketchObject.layers()[childrenIndex-1],__parent,_properties)
-  //     lastChild = Object.assign(lastChild,getShapeProperties(_layer.sketchObject.layers()[childrenIndex-1],__parent))
-  //     __parent.children.push(lastChild)
-  //
-  //   }else{
-  //
-  //     var nextParent =  Object.assign({}, framerModels.combinedPath)
-  //     nextParent = Object.assign(nextParent,{
-  //       "x" : _layer.sketchObject.frame().x(),
-  //       "y" : _layer.sketchObject.frame().y(),
-  //       "width" : _layer.sketchObject.frame().width(),
-  //       "height" : _layer.sketchObject.frame().height(),
-  //       "children" : [],
-  //       "id" : getUniqueIdentifyer("id"),
-  //       "parentid" : __parent["id"],
-  //       "name" : _layer.sketchObject.name() + "_Group"
-  //     })
-  //
-  //     __parent.children.push(nextParent)
-  //
-  //     addLayer(nextParent,childrenIndex-1)
-  //
-  //   }
-  //
-  // }
-  //
-  // _parent.children.push(firstParent)
+  debugger
 
 }
 
