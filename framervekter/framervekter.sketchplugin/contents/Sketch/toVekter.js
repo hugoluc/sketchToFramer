@@ -91,12 +91,15 @@ function onRun(context) {
     addFramerLayer(layer,newRoot);
   });
 
+
   //generate final vekter obj
   exportVekter(newRoot,url)
 
 }
 
 function addFramerLayer(_layer, _parent) {
+
+  debugger
 
   //check if layers are visible and are not sliced
   if (_layer.sketchObject.isVisible() && _layer.sketchObject.class() != MSSliceLayer) {
@@ -110,7 +113,7 @@ function addFramerLayer(_layer, _parent) {
         createCanvas(_layer,_parent,properties)
       }else{
         //createFrame
-        createFrame(_layer,_parent,properties)
+        createFrame(_layer,_parent,properties,true)
       }
 
       _layer.iterate(function(_children){
@@ -120,11 +123,9 @@ function addFramerLayer(_layer, _parent) {
     ///////////////////////////////////////////////  SHAPES + PATH
     }else if(_layer.isShape){
 
-      debugger
-
       var properties = getShapeProperties(_layer,_parent))
 
-      if(_layer.sketchObject.layers().length > 0 && _layer.sketchObject.layers()[_layer.sketchObject.layers().length-1].booleanOperation() > -1 ){
+      if(_layer.sketchObject.layers().length > 1 ){
 
         createComposedPath(_layer,_parent,properties)
 
@@ -333,7 +334,9 @@ function getFrameProperties(_layer,_parent){
 
 }
 
-function getStyle(_layer,_parent,_properties){
+function getStyle(_layer,_parent,_properties,_isGroup){
+
+  debugger
 
   var properties = {}
   var layer = _layer.sketchObject ? _layer.sketchObject : _layer
@@ -344,7 +347,7 @@ function getStyle(_layer,_parent,_properties){
 
   var fills = layer.style().enabledFills();
 
-  if(fills.length > 0){
+  if(fills.length > 0 && !_isGroup){
 
     properties.fillEnabled = true;
 
@@ -355,7 +358,6 @@ function getStyle(_layer,_parent,_properties){
       properties.fillColor = rgbaCode(fills[0].color())
 
     }else if(fillType == 1){
-      properties.fillEnabled = true;
       properties.fillGradient = getGradient(layer.style().enabledFills()[0].gradient().gradientStringWithMasterAlpha(0))
       properties.fillType = "gradient"
     }
@@ -736,49 +738,47 @@ function getPosAndSize(_layer,resetChildren){
 
 }
 
-function getFrameFromLayers(_layer1, _layer2){
+function getBoundingBox(_layers){
 
   var _properties = {}
 
-  l01Frame = _layer1.frame ? _layer1.frame() : _layer1
-  l02Frame = _layer2.frame ? _layer2.frame() : _layer2
-
-  var L01Pos = {
-    "x" :       _layer1.frame ? _layer1.frame().x()       : _layer1.x,
-    "y" :       _layer1.frame ? _layer1.frame().y()       : _layer1.y,
-    "width" :   _layer1.frame ? _layer1.frame().width()   : _layer1.width,
-    "height" :  _layer1.frame ? _layer1.frame().height()  : _layer1.height
+  var firstLayerFrame = !_layers[0].frame ? _layers[0] : {
+    "x" :       _layers[0].frame().x(),
+    "y" :       _layers[0].frame().y(),
+    "width" :   _layers[0].frame().width(),
+    "height" :  _layers[0].frame().height()
   }
 
-  var L02Pos = {
-    "x" :       _layer2.frame ? _layer2.frame().x()       : _layer2.x,
-    "y" :       _layer2.frame ? _layer2.frame().y()       : _layer2.y,
-    "width" :   _layer2.frame ? _layer2.frame().width()   : _layer2.width,
-    "height" :  _layer2.frame ? _layer2.frame().height()  : _layer2.height
+  var TL = {
+    "x" : firstLayerFrame.x,
+    "y" : firstLayerFrame.y
   }
 
-  if(L01Pos.x < L02Pos.x){
-    //L01 on the left
-    _properties.x = L01Pos.x
-    _properties.width = (L02Pos.x + L02Pos.width) - L01Pos.x
-
-  }else{
-    //L02 on the left
-    _properties.x = L02Pos.x
-    _properties.width = (L01Pos.x + L01Pos.width) - L02Pos.x
+  var BR = {
+    "x" : firstLayerFrame.x + firstLayerFrame.width,
+    "y" : firstLayerFrame.y + firstLayerFrame.height
   }
 
-  if(L01Pos.y < L02Pos.y){
-    //L01 on the left
-    _properties.y = L01Pos.y
-    _properties.height = (L02Pos.y + L02Pos.height) - L01Pos.y
+  for (var i = 0; i < _layers.length; i++) {
 
-  }else{
-    //L02 on the left
-    _properties.y = L02Pos.y
-    _properties.height = (L01Pos.y + L01Pos.height) - L02Pos.y
+    var frame = !_layers[i].frame ? _layers[i] : {
+      "x" :       _layers[i].frame().x(),
+      "y" :       _layers[i].frame().y(),
+      "width" :   _layers[i].frame().width(),
+      "height" :  _layers[i].frame().height()
+    }
+
+    TL.x = TL.x < frame.x                   ? TL.x : frame.x
+    TL.y = TL.y < frame.y                   ? TL.y : frame.y
+    BR.x = BR.x > (frame.x + frame.width)   ? BR.x : (frame.x + frame.width)
+    BR.y = BR.y > (frame.y + frame.height)  ? BR.y : (frame.y + frame.height)
 
   }
+
+  _properties.x = TL.x
+  _properties.y = TL.y
+  _properties.width = BR.x - TL.x
+  _properties.height = BR.y - TL.y
 
   return _properties
 
@@ -851,12 +851,14 @@ function createPath(_layer,_parent,_properties){
     }
 
   }else{
+
     var pathFrame = {
       "x" : 0,
       "y" : 0,
       "height" : parseFloat((pathObj.frame().height()).toFixed(3)),
       "width" : parseFloat((pathObj.frame().width()).toFixed(3))
     }
+
   }
 
   for (var i = 0; i < points.length; i++) {
@@ -937,7 +939,7 @@ function createPath(_layer,_parent,_properties){
 
 }
 
-function createFrame(_layer,_parent,_properties){
+function createFrame(_layer,_parent,_properties,_isGroup){
 
   var newObj = Object.assign({}, framerModels.frame)
   newObj = Object.assign(newObj, {
@@ -945,7 +947,7 @@ function createFrame(_layer,_parent,_properties){
     "height" : _layer.sketchObject.frame().height()
   })
   newObj = Object.assign(newObj,_properties)
-  newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties))
+  newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties,_isGroup))
   _parent.children.push(newObj)
 
 }
@@ -975,89 +977,115 @@ function createComposedPath(_layer,_parent,_properties){
 
   var subLayers = _layer.sketchObject.layers()
   var lastLayer = subLayers[0]
-  var secondToLastLayer = subLayers[1]
 
   var allParents = []
+  var layerToBeGrouped = []
 
-  var lastParent =  Object.assign({}, framerModels.combinedPath)
-  lastParent = Object.assign(lastParent, _properties)
-  lastParent = Object.assign(lastParent, getFrameFromLayers(lastLayer,secondToLastLayer))
-  lastParent = Object.assign(lastParent, {
-    "x" : lastParent.x - _layer.sketchObject.frame().x(),
-    "y" : lastParent.y - _layer.sketchObject.frame().y(),
-    "name" : secondToLastLayer.name() + "-Group",
-    "children" : []
-  })
-  allParents.push(lastParent)
+  //get tree structure from sublayers
+  for (var i = 0; i < subLayers.length-1; i++) {
 
-  var lastChild = createPath(lastLayer,lastParent,getShapeProperties(lastLayer,lastParent))
-  lastChild = Object.assign(lastChild, {
-    "x" : lastLayer.frame().x() - lastParent.x,
-    "y" : lastLayer.frame().y() - lastParent.y,
-  })
-  lastParent.children.push(lastChild)
+    layerToBeGrouped.push(subLayers[i])
 
-  var secondToLastChild = createPath(secondToLastLayer,lastParent,getShapeProperties(secondToLastLayer,lastParent))
-  secondToLastChild = Object.assign(secondToLastChild, {
-    "x" : secondToLastLayer.frame().x() - lastParent.x,
-    "y" : secondToLastLayer.frame().y() - lastParent.y,
-  })
-  lastParent.children.push(secondToLastChild)
+    //group layers with similar booleanOperation
+    if(subLayers[i].booleanOperation() != subLayers[i+1].booleanOperation() && i != 0){
 
-  if(subLayers.length > 2){
-
-    for (var i = 0; i <subLayers.length-2; i++) {
-
-      //get new layer in line
-      var nextLayer = subLayers[2+i]
-
-      //create parent based on new layer
+      var frame = getBoundingBox(layerToBeGrouped)
       var nextParent = Object.assign({}, framerModels.combinedPath)
       nextParent = Object.assign(nextParent, {
         "id" : getUniqueIdentifyer("id"),
-        "name" : nextLayer.name() + "-Group",
-        "children" : []
+        "name" : subLayers[i].name() + "-Group",
+        "x" : frame.x,
+        "y" : frame.y,
+        "width" : frame.width,
+        "height" : frame.height,
+        "pathBoolean" : subLayers[i].booleanOperation() == -1 ? 3 : subLayers[i].booleanOperation(),
+        "children" : layerToBeGrouped
       })
 
-      //create frame based on previous parent and current layer
-      nextParent = Object.assign(nextParent, getFrameFromLayers(nextLayer,allParents[i]))
+      layerToBeGrouped = [nextParent]
       allParents.push(nextParent)
-
-      //set correct data for previous parent
-      nextParent.children.push(allParents[i])
-      allParents[i].parentid = nextParent["id"]
-
-
-      //create next child
-      var nextChild = createPath( nextLayer, allParents[allParents.length-1], getShapeProperties(nextLayer, allParents[allParents.length-1]) )
-      allParents[i].parentid = nextParent["id"]
-      allParents[allParents.length-1].children.push(nextChild)
 
     }
 
+    //add first parent
+    if(i == subLayers.length-2){
+
+      layerToBeGrouped.push(subLayers[i+1])
+
+      var frame = getBoundingBox(layerToBeGrouped)
+      var lastParent = Object.assign({}, framerModels.combinedPath)
+      lastParent = Object.assign(lastParent, {
+        "id" : getUniqueIdentifyer("id"),
+        "parentid" : _parent.id,
+        "name" : _layer.sketchObject.name()+"",
+        "x" : _layer.sketchObject.frame().x(),
+        "y" : _layer.sketchObject.frame().y(),
+        "width" : _layer.sketchObject.frame().width(),
+        "height" : _layer.sketchObject.frame().height(),
+        "pathBoolean" : subLayers[subLayers.length-1].booleanOperation() == -1 ? 3 : subLayers[subLayers.length-1].booleanOperation(),
+        "children" : layerToBeGrouped
+      })
+
+      allParents.push(lastParent)
+
+    }
   }
 
-  //Combined    id.00005  //  p.00001   -- nextParent             00,00 // 00,00   -> 00,00
-  //00          id.00006  //  p.00006   -- nextLayer              00,00 // 00,00   -> 00,00
-  //01-group    id.00002  //  p.0005    -- lastParent             00,10 // --,--   -> 00,00
-  //01          id.00004  //  p.0002    -- secondToLastChild      00,00 // 00,10   -> 00,10 *
-  //02          id.00003  //  p.0002    -- lastChild              00,10 // 00,20   -> 00,20 *
+  //create paths and adjust positions based on parent LAYERS
+  adjustPos(allParents[allParents.length-1],false,{
+    "x" : 0,
+    "y" : 0
+  })
+
+  function adjustPos(_parent,_adjustPos,_offset){
+
+    for (var i = 0; i < _parent.children.length; i++) {
+
+      if(_parent.children[i].__class == "BooleanShapeNode"){
+      //create parent
+
+        if(_adjustPos){
+          _parent.children[i].x = _parent.children[i].x - _offset.x
+          _parent.children[i].y = _parent.children[i].y - _offset.y
+        }
+
+        _parent.children[i].parentid = _parent["id"]
+        adjustPos(_parent.children[i],true, {
+          "x" : _offset.x + _parent.children[i].x,
+          "y" : _offset.y + _parent.children[i].y
+        })
+
+      }else{
+      //create path
+
+      var newPath = createPath(_parent.children[i],_parent,getShapeProperties(_parent.children[i],_parent))
+
+        if(_adjustPos){
+          newPath.x = _parent.children[i].frame().x() - _offset.x
+          newPath.y = _parent.children[i].frame().y() - _offset.y
+        }
+
+        _parent.children[i] = newPath
+
+      }
+    }
+  }
 
 
-  var firstParent = allParents[allParents.length-1]
-  firstParent.name = _properties.name
-  firstParent.parentid = _parent["id"]
-  firstParent.x = _layer.sketchObject.frame().x(),
-  firstParent.y = _layer.sketchObject.frame().y(),
-  firstParent.width = _layer.sketchObject.frame().width(),
-  firstParent.height = _layer.sketchObject.frame().height(),
+  //Combined    id.00005  //  p.00001    -- nextParent             05,05 //  05,05  -> 05,05 == -0
 
-  _parent.children.push(firstParent)
+  //00          id.00000  //  p.00005    -- nextLayer              00,00 //  00,00  -> 00,00 === -0
+  //01-group    id.00004  //  p.00005    -- lastParent             05,05 //  05,05  -> 05,05 === -0
 
-  console.log(allParents[0].name,allParents[0].x,allParents[0].y)
-  console.log(allParents[1].name,allParents[1].x,allParents[1].y)
+  //01          id.00009  //  p.00004    -- secondToLastChild      00,00 //  05,05  -> 00,00 === -5
+  //02          id.00008  //  p.00004    -- lastChild              10,10 //  15,15  -> 10,10 === -5
+  //03-group    id.00003  //  p.00004    -- lastChild              30,30 //  35,35  -> 30,30 === -5
 
-  debugger
+  //03          id.00007  //  p.00003    -- lastChild              00,00 //  35,35  -> 00,00 === -5 -30
+  //04          id.00006  //  p.00003    -- lastChild              05,05 //  40,40  -> 05,05 === -5 -30
+
+  allParents[allParents.length-1] = Object.assign(allParents[allParents.length-1],getStyle(_layer,_parent,_properties))
+  _parent.children.push(allParents[allParents.length-1])
 
 }
 
