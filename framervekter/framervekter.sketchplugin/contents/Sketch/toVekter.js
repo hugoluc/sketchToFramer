@@ -111,7 +111,6 @@ function addFramerLayer(_layer, _parent) {
 
   //check if layers are visible and are not sliced
   if (_layer.sketchObject.isVisible() && _layer.sketchObject.class() != MSSliceLayer) {
-    debugger
 
     ///////////////////////////////////////////////  MASK
     if(maskChainEnabled){
@@ -315,17 +314,48 @@ function getShapeProperties(_layer,_parent){
 
 function getFrameProperties(_layer,_parent){
 
-  var properties = getShapeProperties(_layer,_parent)
-  properties = Object.assign(properties, getFixedPosition(_layer,_parent) )
+    var properties = getShapeProperties(_layer,_parent)
+    properties = Object.assign(properties, getFixedPosition(_layer,_parent) )
 
-  Object.assign(properties, {
-    "children" : [],
-    "widthFactor" : null,
-    "heightFactor" : null,
-    "clip" : false,
-  })
+    var name = _layer.sketchObject.name()
+    var frame = _layer.sketchObject.frame()
+    var openBraquet = name.indexOf("[")
+    var closeBraquet = name.indexOf("]")
 
-  return properties
+    //return false if string has duplicate braquets
+    if(openBraquet != -1 && closeBraquet != -1){
+
+      //Check of string is well formed
+      if (openBraquet < closeBraquet){
+
+        Object.assign(properties, {
+
+          "children" : [],
+          "clip" : false,
+          "widthFactor" : null,
+          "heightFactor" : null
+        })
+
+        var propertiesStr = name.substring(openBraquet+1,closeBraquet)
+
+        if(propertiesStr.indexOf("M") != -1){ properties.clip = true }
+
+      }
+
+      return properties
+
+    }else{
+      //layer with no properties specifyed in the layer name
+
+      Object.assign(properties, {
+        "children" : [],
+        "widthFactor" : null,
+        "heightFactor" : null,
+        "clip" : false,
+      })
+
+      return properties
+    }
 
 }
 
@@ -973,9 +1003,10 @@ function createImage(_layer,_parent,_properties){
 
   var thisImageRef = JSON.parse(MSJSONDataArchiver.archiveStringWithRootObject_error_(_layer.sketchObject.immutableModelObject(), nil)).image._ref.split("/")[1];
   if(!allImages[thisImageRef]){
+    debugger
     var imageData = _layer.sketchObject.image().data()
-    var imageUrl = url + "images/design/" + thisImageRef + "png"
-    imageData.writeToFile_atomically(url, "YES");
+    var imageUrl = url.path() + "/images/design/" + thisImageRef + ".png"
+    imageData.writeToFile_atomically(imageUrl, "YES");
 
     allImages[thisImageRef] = imageData
 
@@ -989,6 +1020,8 @@ function createImage(_layer,_parent,_properties){
 
   var newObj = Object.assign({}, framerModels.image)
   newObj = Object.assign(newObj, {
+    "x" : _layer.sketchObject.frame().x(),
+    "y" : _layer.sketchObject.frame().y(),
     "width" : _layer.sketchObject.frame().width(),
     "height" : _layer.sketchObject.frame().height()
   })
@@ -997,8 +1030,6 @@ function createImage(_layer,_parent,_properties){
   _parent.children.push(newObj)
 
   return newObj
-
-  //export image
 
 }
 
@@ -1329,7 +1360,7 @@ function exportVekter(_root,_url){
   var newVekerTxt = JSON.stringify(newVekter, null, "\t")
 
   //export
-  var exportPath = _url.path() + "framer/design.vekter"
+  var exportPath = _url.path() + "/framer/design.vekter"
   var path = [@"" stringByAppendingString:exportPath];
   var str = [@"" stringByAppendingString:newVekerTxt];
   str.dataUsingEncoding_(NSUTF8StringEncoding).writeToFile_atomically_(path, true);
