@@ -4,10 +4,13 @@ var originalVekter = {};
 var alphabetArray = 'abcdefghijklmnopqrstuvwxyz'.split('');
 var maskFolder;
 var maskChainEnabled = false
+var url;
+var allImages = {}
 
 var globelIdentifyers = {
   "id" : "00000",
-  "key" : "000"
+  "key" : "000",
+  "imageName" : "00000000000"
 }
 
 var originalVekter,newRoot;
@@ -31,7 +34,7 @@ function onRun(context) {
   }
 
   //call file selector and get export url
-  var url = getExportUrl()
+  url = getExportUrl()
   if(url == false){
     sketch.message("Error! Select a folder to exporter your file");
     return false;
@@ -87,6 +90,10 @@ function onRun(context) {
     "id" : "combinedPath"
   })
 
+  framerModels.image = Object.assign({}, originalVekter.root.children[0].children[5])
+  framerModels.image = Object.assign(framerModels.image, {
+    "id" : "IMAGE"
+  })
 
   //add sketch layers to root
   selection.iterate(function (layer) {
@@ -166,6 +173,9 @@ function addFramerLayer(_layer, _parent) {
     }else if(_layer.isText){
       var properties = getShapeProperties(_layer,_parent))
       createText(_layer,_parent,properties)
+    }else if(_layer.isImage){
+      var properties = getShapeProperties(_layer,_parent))
+      createImage(_layer,_parent,properties)
     }
 
   }
@@ -211,7 +221,7 @@ function getUniqueIdentifyer(_identifyer){
   return _string
 }
 
-///////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 function textLayerCode(layer) {
 
@@ -314,6 +324,8 @@ function getFrameProperties(_layer,_parent){
     "heightFactor" : null,
     "clip" : false,
   })
+
+  return properties
 
 }
 
@@ -957,6 +969,39 @@ function createText(_layer,_parent,_properties){
 
 }
 
+function createImage(_layer,_parent,_properties){
+
+  var thisImageRef = JSON.parse(MSJSONDataArchiver.archiveStringWithRootObject_error_(_layer.sketchObject.immutableModelObject(), nil)).image._ref.split("/")[1];
+  if(!allImages[thisImageRef]){
+    var imageData = _layer.sketchObject.image().data()
+    var imageUrl = url + "images/design/" + thisImageRef + "png"
+    imageData.writeToFile_atomically(url, "YES");
+
+    allImages[thisImageRef] = imageData
+
+  }else{
+    imageData = allImages[thisImageRef]
+  }
+
+
+  _properties.originalFilename = thisImageRef + ".png"
+  _properties.image = thisImageRef + ".png"
+
+  var newObj = Object.assign({}, framerModels.image)
+  newObj = Object.assign(newObj, {
+    "width" : _layer.sketchObject.frame().width(),
+    "height" : _layer.sketchObject.frame().height()
+  })
+  newObj = Object.assign(newObj,_properties)
+  newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties))
+  _parent.children.push(newObj)
+
+  return newObj
+
+  //export image
+
+}
+
 function createComposedPath(_layer,_parent,_properties){
 
   var subLayers = _layer.sketchObject.layers()
@@ -1079,7 +1124,7 @@ function createComposedPath(_layer,_parent,_properties){
 
 function isRectangle(layer) {
 
-  if(layer.layers().length == 0){
+  if(!layer.layers || layer.layers().length == 0){
     return false
   }
 
@@ -1095,7 +1140,7 @@ function isRectangle(layer) {
 
 function isCircle(layer) {
 
-  if(layer.layers().length == 0){
+  if(!layer.layers || layer.layers().length == 0){
     return false
   }
 
@@ -1284,7 +1329,7 @@ function exportVekter(_root,_url){
   var newVekerTxt = JSON.stringify(newVekter, null, "\t")
 
   //export
-  var exportPath = _url.path() + "/design.vekter"
+  var exportPath = _url.path() + "framer/design.vekter"
   var path = [@"" stringByAppendingString:exportPath];
   var str = [@"" stringByAppendingString:newVekerTxt];
   str.dataUsingEncoding_(NSUTF8StringEncoding).writeToFile_atomically_(path, true);
