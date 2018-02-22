@@ -222,16 +222,21 @@ function Exporter(context) {
 	}
 
 	function exportImageForLayer(layer, exportPath, imageFormat, imageScales) {
+
 		var filePaths = [];
+
 		var formats = imageScales.map(function(scale) {
 			return [MSExportFormat formatWithScale:scale name:nameForScale(scale) fileFormat:imageFormat];
 		});
+
 		var requests = [MSExportRequest exportRequestsFromExportableLayer:layer exportFormats:formats useIDForName: false];
+
 		requests.forEach(function(request) {
 			var filePath = exportPath + request.name() + "." + request.format();
 			filePaths.push(filePath);
 			[doc saveExportRequest:request toFile: filePath];
 		});
+		
 		return filePaths;
 	}
 

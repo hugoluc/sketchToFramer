@@ -2,6 +2,8 @@ var layerNames = {};
 var framerLayers = [];
 var originalVekter = {};
 var alphabetArray = 'abcdefghijklmnopqrstuvwxyz'.split('');
+var maskFolder;
+var maskChainEnabled = false
 
 var globelIdentifyers = {
   "id" : "00000",
@@ -99,10 +101,31 @@ function onRun(context) {
 
 function addFramerLayer(_layer, _parent) {
 
-  debugger
 
   //check if layers are visible and are not sliced
   if (_layer.sketchObject.isVisible() && _layer.sketchObject.class() != MSSliceLayer) {
+    debugger
+
+    ///////////////////////////////////////////////  MASK
+    if(maskChainEnabled){
+
+
+      if(_layer.sketchObject.shouldBreakMaskChain() == 1 || maskFolder.parentid != _parent.id){
+        maskChainEnabled = false
+      }else{
+        _parent = maskFolder
+      }
+
+    }else if(_layer.sketchObject.hasClippingMask() == 1 && !_layer.isArtboard){
+
+      maskChainEnabled = true
+      var properties = getFrameProperties(_layer,_parent))
+      properties.clip = true
+      maskFolder = createFrame(_layer,_parent,properties)
+      maskFolder.name = properties.name + "-MaskGroup"
+      _parent = maskFolder
+
+    }
 
     ///////////////////////////////////////////////  FRAME
     if(_layer.isGroup) {
@@ -285,58 +308,16 @@ function getFrameProperties(_layer,_parent){
   var properties = getShapeProperties(_layer,_parent)
   properties = Object.assign(properties, getFixedPosition(_layer,_parent) )
 
-  var name = _layer.sketchObject.name()
-  var frame = _layer.sketchObject.frame()
-  var openBraquet = name.indexOf("[")
-  var closeBraquet = name.indexOf("]")
-
-  //return false if string has duplicate braquets
-  if(openBraquet != -1 && closeBraquet != -1){
-
-    //Check of string is well formed
-    if (openBraquet < closeBraquet){
-
-      Object.assign(properties, {
-
-        "children" : [],
-        "clip" : false,
-        "widthFactor" : null,
-        "heightFactor" : null
-      })
-
-      var propertiesStr = name.substring(openBraquet+1,closeBraquet)
-
-      if(propertiesStr.indexOf("M") != -1){ properties.clip = true }
-
-      if(propertiesStr.indexOf("W") != -1){
-        //width factor null
-      }
-
-      if(propertiesStr.indexOf("H") != -1){
-      //height factor null
-      }
-    }
-
-    return properties
-
-  }else{
-    //layer with no properties specifyed in the layer name
-
-    Object.assign(properties, {
-      "children" : [],
-      "widthFactor" : null,
-      "heightFactor" : null,
-      "clip" : false,
-    })
-
-    return properties
-  }
+  Object.assign(properties, {
+    "children" : [],
+    "widthFactor" : null,
+    "heightFactor" : null,
+    "clip" : false,
+  })
 
 }
 
 function getStyle(_layer,_parent,_properties,_isGroup){
-
-  debugger
 
   var properties = {}
   var layer = _layer.sketchObject ? _layer.sketchObject : _layer
@@ -377,13 +358,13 @@ function getStyle(_layer,_parent,_properties,_isGroup){
   if (isCircle(layer)) {
     //if object is a circle:
 
-    // borderRadius = layer.frame.width() / 2;
-    // radiusBottomLeft,radiusBottomRight,radiusTopLeft,radiusTopRight = layer.frame.width() / 2;
+    borderRadius = layer.frame().width() / 2;
+    radiusBottomLeft = radiusBottomRight = radiusTopLeft = radiusTopRight = layer.frame().width() / 2;
 
   } else if(_properties.clip) {
     //if object is a mask
 
-    var rectObj = layer.layers().firstObject().layers().firstObject()
+    var rectObj = layer.layers().firstObject()
     radiusTopLeft = rectObj.path().points()[0].cornerRadius()
     radiusTopRight = rectObj.path().points()[1].cornerRadius()
     radiusBottomRight = rectObj.path().points()[2].cornerRadius()
@@ -784,6 +765,7 @@ function getBoundingBox(_layers){
 
 }
 
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////   ADD FRAMER OBJ FROM MODELS  /////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -950,6 +932,8 @@ function createFrame(_layer,_parent,_properties,_isGroup){
   newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties,_isGroup))
   _parent.children.push(newObj)
 
+  return newObj
+
 }
 
 function createText(_layer,_parent,_properties){
@@ -1110,8 +1094,6 @@ function isRectangle(layer) {
 }
 
 function isCircle(layer) {
-
-  console.log(layer.layers());
 
   if(layer.layers().length == 0){
     return false
