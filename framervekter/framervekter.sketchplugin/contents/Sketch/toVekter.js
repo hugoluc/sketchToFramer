@@ -381,7 +381,7 @@ function getStyle(_layer,_parent,_properties,_isGroup){
       properties.fillColor = rgbaCode(fills[0].color())
 
     }else if(fillType == 1){
-      properties.fillGradient = getGradient(layer.style().enabledFills()[0].gradient().gradientStringWithMasterAlpha(0))
+      properties.fillGradient = getGradient(layer.style().enabledFills()[0].gradient().gradientStringWithMasterAlpha(1))
       properties.fillType = "gradient"
     }
 
@@ -1003,7 +1003,6 @@ function createImage(_layer,_parent,_properties){
 
   var thisImageRef = JSON.parse(MSJSONDataArchiver.archiveStringWithRootObject_error_(_layer.sketchObject.immutableModelObject(), nil)).image._ref.split("/")[1];
   if(!allImages[thisImageRef]){
-    debugger
     var imageData = _layer.sketchObject.image().data()
     var imageUrl = url.path() + "/images/design/" + thisImageRef + ".png"
     imageData.writeToFile_atomically(imageUrl, "YES");
@@ -1259,12 +1258,19 @@ function rgbaToHsl(_colorString) {
 
   // r /= 255, g /= 255, b /= 255;
 
-  var max = Math.max(r, g, b), min = Math.min(r, g, b);
-  var h, s, l = (max + min) / 2;
+  var max = Math.max(r, g, b)
+  var min = Math.min(r, g, b);
+
+  var h = (max + min) / 2; //hue
+  var s = (max + min) / 2; //saturation
+  var l = (max + min) / 2; //lightness
 
   if (max == min) {
+
     h = s = 0; // achromatic
+
   } else {
+
     var d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 
@@ -1275,6 +1281,7 @@ function rgbaToHsl(_colorString) {
     }
 
     h /= 6;
+
   }
 
   h = parseFloat((h*360).toFixed(0))
@@ -1305,21 +1312,18 @@ function rgbToHex(colour){
 
 function getGradient(_gradient){
 
-  var gradientData = _gradient.split(",")
+  var gradientData = _gradient.split(" ")
+  var angle = Math.abs(parseInt(gradientData[0].slice(0,-3)))
+  var start = gradientData[1].trim().split(" ")[0]
+  var end = gradientData[3].trim().split(" ")[0]
 
   return {
     "__class" : "LinearGradient",
     "alpha" : 1,
-    "angle" :  Math.abs(parseInt(gradientData[0].slice(0,-3))),
-
-    //FIXME: Make HEX code in to HSLA format to allow shifting gradient color inside spectrum
-    //FIXME: CHeck versioning to proer generate properties name (start vs firstcolor)
-    "firstColor" :  gradientData[1].trim().split(" ")[0],
-    "start" :  gradientData[1].trim().split(" ")[0],
-    "lastColor" :  gradientData[gradientData.length-1].trim().split(" ")[0],
-    "end" :  gradientData[gradientData.length-1].trim().split(" ")[0],
+    "angle" :  angle,
+    "start" : start,
+    "end" : end
   }
-
 
 }
 
