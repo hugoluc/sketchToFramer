@@ -9,8 +9,7 @@ var allImages = {}
 
 var globelIdentifyers = {
   "id" : "00000",
-  "key" : "000",
-  "imageName" : "00000000000"
+  "key" : "000"
 }
 
 var originalVekter,newRoot;
@@ -113,8 +112,10 @@ function addFramerLayer(_layer, _parent) {
   if (_layer.sketchObject.isVisible() && _layer.sketchObject.class() != MSSliceLayer) {
 
     ///////////////////////////////////////////////  MASK
+
     if(maskChainEnabled){
 
+      debugger
 
       if(_layer.sketchObject.shouldBreakMaskChain() == 1 || maskFolder.parentid != _parent.id){
         maskChainEnabled = false
@@ -422,7 +423,6 @@ function getStyle(_layer,_parent,_properties,_isGroup){
     radiusBottomLeft = rectObj.path().points()[3].cornerRadius()
 
   }
-
 
   if(radiusBottomLeft == radiusBottomRight && radiusBottomRight == radiusTopLeft && radiusTopLeft == radiusTopRight){
 
@@ -1179,7 +1179,7 @@ function isCircle(layer) {
   var width = layer.frame().width();
   var height = layer.frame().height();
 
-  if (layerCount == 1 && layerClass == "MSOvalShape" && width == height) {
+  if (layerCount == 1 && layerClass == "MSOvalShape") {
     return true;
   } else {
     return false;
