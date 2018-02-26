@@ -2,7 +2,7 @@ var layerNames = {};
 var framerLayers = [];
 var originalVekter = {};
 var alphabetArray = 'abcdefghijklmnopqrstuvwxyz'.split('');
-var maskFolder;
+var maskFolder = [];
 var maskChainEnabled = false
 var url;
 var allImages = {}
@@ -55,7 +55,8 @@ function onRun(context) {
   framerModels.artboard = Object.assign({}, originalVekter.root.children[0])
   framerModels.artboard = Object.assign(framerModels.artboard, {
     "children" : [],
-    "id" : "ART"
+    "id" : "ART",
+    "clip" :  true
   })
 
   framerModels.path = Object.assign({}, originalVekter.root.children[0].children[0])
@@ -107,34 +108,48 @@ function onRun(context) {
 
 function addFramerLayer(_layer, _parent) {
 
-
   //check if layers are visible and are not sliced
   if (_layer.sketchObject.isVisible() && _layer.sketchObject.class() != MSSliceLayer) {
 
     ///////////////////////////////////////////////  MASK
 
-    if(maskChainEnabled){
+    if(_layer.sketchObject.hasClippingMask() == 1 && !_layer.isArtboard){
 
-      debugger
-
-      if(_layer.sketchObject.shouldBreakMaskChain() == 1 || maskFolder.parentid != _parent.id){
-        maskChainEnabled = false
-      }else{
-        _parent = maskFolder
+      if(maskChainEnabled){
+        _parent = maskFolder[maskFolder.length-1]
       }
-
-    }else if(_layer.sketchObject.hasClippingMask() == 1 && !_layer.isArtboard){
 
       maskChainEnabled = true
       var properties = getFrameProperties(_layer,_parent))
       properties.clip = true
-      maskFolder = createFrame(_layer,_parent,properties)
-      maskFolder.name = properties.name + "-MaskGroup"
-      _parent = maskFolder
+      var newMaskFolder = createFrame(_layer,_parent,properties)
+      newMaskFolder.name = properties.name + "-MaskGroup"
+      maskFolder.push(newMaskFolder)
+      _parent = maskFolder[maskFolder.length-1]
+
+    }else if(maskChainEnabled){
+
+      if(_layer.sketchObject.shouldBreakMaskChain() == 1 || maskFolder[maskFolder.length-1].parentid != _parent.id){
+
+        maskChainEnabled = false
+        maskFolder.pop()
+
+      }else if(_layer.isGroup){
+
+        maskChainEnabled = false
+        _parent = maskFolder[maskFolder.length-1]
+
+      }else{
+        _parent = maskFolder[maskFolder.length-1]
+      }
 
     }
 
+
     ///////////////////////////////////////////////  FRAME
+
+
+
     if(_layer.isGroup) {
 
       var properties = getFrameProperties(_layer,_parent))
@@ -163,7 +178,9 @@ function addFramerLayer(_layer, _parent) {
         createPath(_layer,_parent,properties)
 
       }else if (_layer.sketchObject.layers()[0].class() == MSRectangleShape){
-        createRectangle(_layer,_parent,properties)
+
+        var properties = getFrameProperties(_layer,_parent))
+        createFrame(_layer,_parent,properties,false)
 
       }else{
         createPath(_layer,_parent,properties)
@@ -694,26 +711,44 @@ function getTextStyle(_layer,_parent,_properties){
 function getFixedPosition(_layer,_parent){
 
   var childSize = {
-    "width" : _layer.sketchObject.frame().width(),
-    "height" :  _layer.sketchObject.frame().height(),
-    "x" : _layer.sketchObject.frame().x(),
-    "y" : _layer.sketchObject.frame().y(),
-    "autoSize" : false
+    "width" :     _layer.sketchObject.frame().width(),
+    "height" :    _layer.sketchObject.frame().height(),
+    "x" :         _layer.sketchObject.frame().x(),
+    "y" :         _layer.sketchObject.frame().y(),
+    "autoSize" :  false
   }
 
   var parentSize = {
-    "width" : _parent.width,
-    "height" :  _parent.height
+    "width" :     _parent.width,
+    "height" :    _parent.height
   }
 
   var properties = {}
   properties.centerAnchorX = ( childSize.x + (childSize.width/2) ) / parentSize.width
   properties.centerAnchorY = ( childSize.y + (childSize.height/2) ) / parentSize.height
 
+  if(_parent.clip){
+    var parentOffset = {
+      "top" :    _parent.top    ? _parent.top : null,
+      "left" :   _parent.left   ? _parent.left : null,
+      "bottom" : _parent.bottom ? _parent.bottom : null,
+      "right" :  _parent.right  ? _parent.right : null
+    }
+  }else{
+    var parentOffset = {
+      "top" : 0,
+      "left" : 0,
+      "bottom" : 0,
+      "right" : 0
+    }
+  }
+
+  properties.right    = _layer.sketchObject.hasFixedRight()   ? parentSize.width - (childSize.x + childSize.width) - parentOffset.right  : null
+  properties.left     = _layer.sketchObject.hasFixedLeft()    ? childSize.x - parentOffset.left : null
+  properties.top      = _layer.sketchObject.hasFixedTop()     ? childSize.y - parentOffset.top : null
+  properties.bottom   = _layer.sketchObject.hasFixedBottom()  ? parentSize.height - (childSize.y + childSize.height) - parentOffset.bottom : null
 
   if( !properties.right && !properties.left && !properties.top && !properties.bottom ){
-    // properties.x = childSize.x
-    // properties.y = childSize.y
 
     if(properties.centerAnchorX *  parentSize.width >  parentSize.width/2){
       properties.right = parentSize.width - (childSize.x + childSize.width)
@@ -731,31 +766,7 @@ function getFixedPosition(_layer,_parent){
       properties.top = childSize.y
     }
 
-  }else{
-
-    properties.right    = _layer.sketchObject.hasFixedRight()   ? parentSize.width - (childSize.x + childSize.width) : null
-    properties.left     = _layer.sketchObject.hasFixedLeft()    ? childSize.x : null
-    properties.top      = _layer.sketchObject.hasFixedTop()     ? childSize.y : null
-    properties.bottom   = _layer.sketchObject.hasFixedBottom()  ? parentSize.height - (childSize.y + childSize.height) : null
-
   }
-
-  return properties
-
-}
-
-function getPosAndSize(_layer,resetChildren){
-
-  sketchObject = _layer.sketchObject ? _layer.sketchObject : _layer
-
-  var properties = {
-    "x" : sketchObject.frame().x(),
-    "y" : sketchObject.frame().y(),
-    "width" : sketchObject.frame().width(),
-    "height" : sketchObject.frame().height(),
-  }
-
-  if(resetChildren){ properties.children = [] }
 
   return properties
 
@@ -815,13 +826,14 @@ function getBoundingBox(_layers){
 function createCanvas(_layer,_parent,_properties){
 
   var newObj = Object.assign({}, framerModels.artboard)
+  newObj = Object.assign(newObj,_properties)
   newObj = Object.assign(newObj, {
     "x" : _layer.sketchObject.absoluteRect().rulerX(),
     "y" : _layer.sketchObject.absoluteRect().rulerY(),
     "width" : _layer.sketchObject.frame().width(),
-    "height" : _layer.sketchObject.frame().height()
+    "height" : _layer.sketchObject.frame().height(),
+    "clip" : true
   })
-  newObj = Object.assign(newObj,_properties)
 
   _parent.children.push(newObj)
 
@@ -831,27 +843,28 @@ function createRectangle(_layer,_parent,_properties){
 
   var newObj = Object.assign({}, framerModels.rectangle)
 
-  if(_layer.sketchObject.name() + "" == "Mask"){
+  // if(_layer.sketchObject.name() + "" == "Mask"){
+  //
+  //   _parent = Object.assign(_parent, {
+  //     "width" : _layer.sketchObject.frame().width(),
+  //     "height" : _layer.sketchObject.frame().height()
+  //   })
+  //   _parent = Object.assign(_parent,getStyle(_layer,_parent,_properties))
+  //
+  // }else{
 
-    _parent = Object.assign(_parent, {
-      "width" : _layer.sketchObject.frame().width(),
-      "height" : _layer.sketchObject.frame().height()
-    })
-    _parent = Object.assign(_parent,getStyle(_layer,_parent,_properties))
+  newObj = Object.assign(newObj, {
+    "x" : _layer.sketchObject.frame().x(),
+    "y" : _layer.sketchObject.frame().y(),
+    "width" : _layer.sketchObject.frame().width(),
+    "height" : _layer.sketchObject.frame().height()
+  })
 
-  }else{
+  newObj = Object.assign(newObj,_properties)
+  newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties))
+  _parent.children.push(newObj)
 
-    newObj = Object.assign(newObj, {
-      "x" : _layer.sketchObject.frame().x(),
-      "y" : _layer.sketchObject.frame().y(),
-      "width" : _layer.sketchObject.frame().width(),
-      "height" : _layer.sketchObject.frame().height()
-    })
-    newObj = Object.assign(newObj,_properties)
-    newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties))
-    _parent.children.push(newObj)
-
-  }
+  // }
 
 }
 
