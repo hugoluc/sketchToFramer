@@ -155,7 +155,8 @@ function addFramerLayer(_layer, _parent) {
       var properties = getFrameProperties(_layer,_parent))
 
       if(_layer.isArtboard) {
-        createCanvas(_layer,_parent,properties)
+        var newCanvas = createCanvas(_layer,_parent,properties)
+        newCanvas.isCanvas = true
       }else{
         //createFrame
         createFrame(_layer,_parent,properties,true)
@@ -164,6 +165,10 @@ function addFramerLayer(_layer, _parent) {
       _layer.iterate(function(_children){
         addFramerLayer(_children, _parent.children[_parent.children.length-1])
       })
+
+      if(_layer.isArtboard){
+        delete newCanvas["isCanvas"]
+      }
 
     ///////////////////////////////////////////////  SHAPES + PATH
     }else if(_layer.isShape){
@@ -334,6 +339,7 @@ function getFrameProperties(_layer,_parent){
 
     var properties = getShapeProperties(_layer,_parent)
     properties = Object.assign(properties, getFixedPosition(_layer,_parent) )
+    properties = Object.assign(properties, getFixedSize(_layer,_parent) )
 
     var name = _layer.sketchObject.name()
     var frame = _layer.sketchObject.frame()
@@ -350,8 +356,6 @@ function getFrameProperties(_layer,_parent){
 
           "children" : [],
           "clip" : false,
-          "widthFactor" : null,
-          "heightFactor" : null
         })
 
         var propertiesStr = name.substring(openBraquet+1,closeBraquet)
@@ -367,8 +371,6 @@ function getFrameProperties(_layer,_parent){
 
       Object.assign(properties, {
         "children" : [],
-        "widthFactor" : null,
-        "heightFactor" : null,
         "clip" : false,
       })
 
@@ -727,7 +729,7 @@ function getFixedPosition(_layer,_parent){
   properties.centerAnchorX = ( childSize.x + (childSize.width/2) ) / parentSize.width
   properties.centerAnchorY = ( childSize.y + (childSize.height/2) ) / parentSize.height
 
-  if(_parent.clip){
+  if(_parent.clip && !_parent.isCanvas){
     var parentOffset = {
       "top" :    _parent.top    ? _parent.top : null,
       "left" :   _parent.left   ? _parent.left : null,
@@ -767,6 +769,23 @@ function getFixedPosition(_layer,_parent){
     }
 
   }
+
+  return properties
+
+}
+
+function getFixedSize(_layer,_parent){
+
+  debugger
+
+  var properties = {}
+  var layer = _layer.sketchObject ? _layer.sketchObject : _layer
+
+  properties.width = layer.frame().width()
+  properties.height = layer.frame().height()
+
+  properties.widthFactor = !layer.hasFixedWidth() ? layer.frame().width()/_parent.width : null
+  properties.heightFactor = !layer.hasFixedHeight() ? layer.frame().height()/_parent.height : null
 
   return properties
 
@@ -818,7 +837,6 @@ function getBoundingBox(_layers){
 
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////   ADD FRAMER OBJ FROM MODELS  /////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -836,6 +854,8 @@ function createCanvas(_layer,_parent,_properties){
   })
 
   _parent.children.push(newObj)
+
+  return newObj
 
 }
 
