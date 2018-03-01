@@ -244,83 +244,6 @@ function getUniqueIdentifyer(_identifyer){
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-function textLayerCode(layer) {
-
-  var framerObject = {};
-
-  // if text is fixed width
-  if (layer.textBehaviour() == 1) {
-    framerObject.width = layer.frame().width() * scale;
-  }
-
-  framerObject.text = '"' + layer.stringValue() + '"';
-  framerObject.fontSize = layer.fontSize() * scale;
-  framerObject.fontFamily = '"' + layer.font().familyName() + '"';
-
-  var fontStyle = getFontStyle(layer);
-  if (fontStyle.slope != "") {
-    framerObject.fontStyle = fontStyle.slope;
-  }
-
-  if (fontStyle.weight != "") {
-    framerObject.fontWeight = fontStyle.weight;
-  }
-
-  if (layer.characterSpacing() != null) {
-    framerObject.letterSpacing = (layer.characterSpacing() * scale).toFixed(1);
-  }
-
-  if (layer.lineHeight() != 0) {
-    framerObject.lineHeight = layer.lineHeight() * scale / framerObject.fontSize;
-  }
-
-  switch (layer.textAlignment()) {
-    case 1:
-      framerObject.textAlign = '"right"';
-      break;
-    case 2:
-      framerObject.textAlign = '"center"';
-      break;
-    default:
-      framerObject.textAlign = '"left"';
-  }
-
-  if (layer.styleAttributes().NSStrikethrough == 1) {
-    framerObject.textDecoration = '"line-through"';
-  }
-
-  if (layer.styleAttributes().NSUnderline == 1) {
-    framerObject.textDecoration = '"underline"';
-  }
-
-  if (layer.styleAttributes().MSAttributedStringTextTransformAttribute == 1) {
-    framerObject.textTransform = '"uppercase"';
-  }
-
-  if (layer.styleAttributes().MSAttributedStringTextTransformAttribute == 2) {
-    framerObject.textTransform = '"lowercase"';
-  }
-
-  framerObject.color = rgbaCode(layer.textColor());
-
-  var shadow = getShadow(layer.style());
-  if (shadow != null) {
-    framerObject.shadowColor = rgbaCode(shadow.color());
-    framerObject.shadowX = shadow.offsetX() * scale;
-    framerObject.shadowY = shadow.offsetY() * scale;
-    framerObject.shadowBlur = shadow.blurRadius() * scale;
-  }
-
-  var opacity = layer.style().contextSettings().opacity();
-  if (opacity != 1) {
-    framerObject.opacity = opacity;
-  }
-
-  return framerObject;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 ///////////////////   GET PROPERTIES FROM SKETCH LAYERS   //////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -587,14 +510,11 @@ function getTextStyle(_layer,_parent,_properties){
 
   for(var i = 0; i < atributes.length; i++){
 
-
-    var count = 0
     var text = atributes[i].text
 
     debugger
 
     if((text.match(/\n/g) || []).length == 1 && text.length() == 1){
-      count++
       continue
     }
 
@@ -885,16 +805,6 @@ function createRectangle(_layer,_parent,_properties){
 
   var newObj = Object.assign({}, framerModels.rectangle)
 
-  // if(_layer.sketchObject.name() + "" == "Mask"){
-  //
-  //   _parent = Object.assign(_parent, {
-  //     "width" : _layer.sketchObject.frame().width(),
-  //     "height" : _layer.sketchObject.frame().height()
-  //   })
-  //   _parent = Object.assign(_parent,getStyle(_layer,_parent,_properties))
-  //
-  // }else{
-
   newObj = Object.assign(newObj, {
     "x" : _layer.sketchObject.frame().x(),
     "y" : _layer.sketchObject.frame().y(),
@@ -906,13 +816,10 @@ function createRectangle(_layer,_parent,_properties){
   newObj = Object.assign(newObj,getStyle(_layer,_parent,_properties))
   _parent.children.push(newObj)
 
-  // }
 
 }
 
 function createPath(_layer,_parent,_properties){
-
-  //FIXME add suport to dashed
 
   var newObj = Object.assign({}, framerModels.path)
 
@@ -1034,8 +941,6 @@ function createFrame(_layer,_parent,_properties,_isGroup){
 }
 
 function createText(_layer,_parent,_properties){
-
-  debugger
 
   var newObj = Object.assign({}, framerModels.text)
 
