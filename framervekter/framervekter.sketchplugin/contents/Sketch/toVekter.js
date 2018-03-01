@@ -569,6 +569,8 @@ function getStyle(_layer,_parent,_properties,_isGroup){
 
 function getTextStyle(_layer,_parent,_properties){
 
+  debugger
+
   var properties = {
     "styledText" : Object.assign({},framerModels.text.styledText)
   }
@@ -583,8 +585,16 @@ function getTextStyle(_layer,_parent,_properties){
   var atributes = _layer.sketchObject.attributedString().treeAsDictionary().value.attributes
   var styleIndex = [0];
   var styles = [];
+  var count = 0
 
   for(var i = 0; i < atributes.length; i++){
+
+    var text = atributes[i].text
+
+    if(text == "\n"){
+      count++
+      continue
+    }
 
     var lineAtributes = atributes[i].text.trim().split("\n")
     for(var l = 0; l < lineAtributes.length; l++){
@@ -618,18 +628,18 @@ function getTextStyle(_layer,_parent,_properties){
       color = color[0] == "#" ? hexToRGB(color) : rgbaToHsl(color)
 
       styles.push({
-
-          "index" : lineAtributes[l].length + styleIndex[i+l],
-          "text" : lineAtributes[l],
-          "COLOR" : color,
-          "FONT" : atributes[i].NSFont.attributes.NSFontNameAttribute,
-          "SIZE" : size,
-          "LINEHEIGHT" : lineHeight == 0 ?  1 : lineHeight/size,
-          "LETTERSPACING" : atributes[i].NSKern,
-          "ALIGN" : align
-
+        "index" : lineAtributes[l].length + styleIndex[i+l],
+        "text" : lineAtributes[l],
+        "COLOR" : color,
+        "FONT" : atributes[i].NSFont.attributes.NSFontNameAttribute,
+        "SIZE" : size,
+        "LINEHEIGHT" : lineHeight == 0 ?  1 : lineHeight/size,
+        "LETTERSPACING" : atributes[i].NSKern,
+        "ALIGN" : align
       })
-      styleIndex.push(lineAtributes[l].length + styleIndex[i+l])
+
+      styleIndex.push(lineAtributes[l].length + styleIndex[i + l - count])
+
     }
   }
 
@@ -642,6 +652,7 @@ function getTextStyle(_layer,_parent,_properties){
   var allBlocks
 
   for (var i = 0; i < stringBlocks.length; i++) {
+
     blocks[i] = []
     blockIndex.push( blockIndex[i] + stringBlocks[i].length)
 
@@ -655,6 +666,7 @@ function getTextStyle(_layer,_parent,_properties){
         break
       }
     }
+
   }
 
   //generate code from line styles
@@ -1013,6 +1025,8 @@ function createFrame(_layer,_parent,_properties,_isGroup){
 
 function createText(_layer,_parent,_properties){
 
+  debugger
+
   var newObj = Object.assign({}, framerModels.text)
 
   //get text center
@@ -1024,10 +1038,10 @@ function createText(_layer,_parent,_properties){
     "autoSize" : false
   })
 
-
   newObj = Object.assign(newObj, _properties)
   newObj = Object.assign(newObj,getTextStyle(_layer,_parent,_properties))
   newObj = Object.assign(newObj,getFixedPosition(_layer,_parent))
+
   _parent.children.push(newObj)
 
 }
