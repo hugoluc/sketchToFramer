@@ -569,7 +569,6 @@ function getStyle(_layer,_parent,_properties,_isGroup){
 
 function getTextStyle(_layer,_parent,_properties){
 
-  debugger
 
   var properties = {
     "styledText" : Object.assign({},framerModels.text.styledText)
@@ -585,19 +584,28 @@ function getTextStyle(_layer,_parent,_properties){
   var atributes = _layer.sketchObject.attributedString().treeAsDictionary().value.attributes
   var styleIndex = [0];
   var styles = [];
-  var count = 0
 
   for(var i = 0; i < atributes.length; i++){
 
+
+    var count = 0
     var text = atributes[i].text
 
-    if(text == "\n"){
+    debugger
+
+    if((text.match(/\n/g) || []).length == 1 && text.length() == 1){
       count++
       continue
     }
 
-    var lineAtributes = atributes[i].text.trim().split("\n")
+    var lineAtributes = atributes[i].text.split("\n")
     for(var l = 0; l < lineAtributes.length; l++){
+
+      if(lineAtributes[l] == ""){
+        lineAtributes.splice(l,1)
+        l--
+        continue
+      }
 
       var lineHeight =  atributes[i].NSParagraphStyle.style.maximumLineHeight
       var size =  atributes[i].NSFont.attributes.NSFontSizeAttribute
@@ -627,8 +635,11 @@ function getTextStyle(_layer,_parent,_properties){
       var color = atributes[i].MSAttributedStringColorAttribute.value + ""
       color = color[0] == "#" ? hexToRGB(color) : rgbaToHsl(color)
 
+      var index = lineAtributes[l].length + styleIndex[styleIndex.length-1]
+      styleIndex.push(index)
+
       styles.push({
-        "index" : lineAtributes[l].length + styleIndex[i+l],
+        "index" : index,
         "text" : lineAtributes[l],
         "COLOR" : color,
         "FONT" : atributes[i].NSFont.attributes.NSFontNameAttribute,
@@ -638,7 +649,6 @@ function getTextStyle(_layer,_parent,_properties){
         "ALIGN" : align
       })
 
-      styleIndex.push(lineAtributes[l].length + styleIndex[i + l - count])
 
     }
   }
