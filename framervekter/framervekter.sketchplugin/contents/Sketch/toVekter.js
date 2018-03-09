@@ -9,7 +9,8 @@ var allImages = {}
 
 var globelIdentifyers = {
   "id" : "00000",
-  "key" : "000"
+  "key" : "000",
+  "name" : "0000"
 }
 
 var originalVekter,newRoot;
@@ -255,7 +256,10 @@ function getShapeProperties(_layer,_parent){
     "name" : _layer.sketchObject ? _layer.sketchObject.name() + "" : _layer.name() + ""
   }
 
+  properties.name = properties.name + "_" +  getUniqueIdentifyer("name")
+
   return properties
+
 }
 
 function getFrameProperties(_layer,_parent){
@@ -264,7 +268,7 @@ function getFrameProperties(_layer,_parent){
     properties = Object.assign(properties, getFixedPosition(_layer,_parent) )
     properties = Object.assign(properties, getFixedSize(_layer,_parent) )
 
-    var name = _layer.sketchObject.name()
+    var name = _layer.sketchObject.name() + "_" + getUniqueIdentifyer("name")
     var frame = _layer.sketchObject.frame()
     var openBraquet = name.indexOf("[")
     var closeBraquet = name.indexOf("]")
@@ -512,8 +516,6 @@ function getTextStyle(_layer,_parent,_properties){
 
     var text = atributes[i].text
 
-    debugger
-
     if((text.match(/\n/g) || []).length == 1 && text.length() == 1){
       continue
     }
@@ -552,8 +554,15 @@ function getTextStyle(_layer,_parent,_properties){
           align = "left"
       }
 
-      var color = atributes[i].MSAttributedStringColorAttribute.value + ""
-      color = color[0] == "#" ? hexToRGB(color) : rgbaToHsl(color)
+      if(atributes[i].MSAttributedStringColorAttribute == null){
+
+
+      }else{
+
+        var color = atributes[i].MSAttributedStringColorAttribute.value + ""
+        color = color[0] == "#" ? hexToRGB(color) : rgbaToHsl(color)
+
+      }
 
       var index = lineAtributes[l].length + styleIndex[styleIndex.length-1]
       styleIndex.push(index)
@@ -568,7 +577,6 @@ function getTextStyle(_layer,_parent,_properties){
         "LETTERSPACING" : atributes[i].NSKern,
         "ALIGN" : align
       })
-
 
     }
   }
@@ -718,7 +726,7 @@ function getFixedPosition(_layer,_parent){
 
 function getFixedSize(_layer,_parent){
 
-  debugger
+
 
   var properties = {}
   var layer = _layer.sketchObject ? _layer.sketchObject : _layer
