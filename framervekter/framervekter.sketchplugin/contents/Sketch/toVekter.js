@@ -253,7 +253,7 @@ function getShapeProperties(_layer,_parent){
   var properties = {
     "id" : getUniqueIdentifyer("id"),
     "parentid" : _parent["id"],
-    "name" : _layer.sketchObject ? _layer.sketchObject.name() + "" : _layer.name() + ""
+    "name" : _layer.sketchObject ? _layer.sketchObject.name() + "" : _layer.name() + "",
     "targetName" : _layer.sketchObject ? _layer.sketchObject.name() + "" : _layer.name() + ""
   }
 
