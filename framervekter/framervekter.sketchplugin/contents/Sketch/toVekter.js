@@ -256,7 +256,7 @@ function getShapeProperties(_layer,_parent){
     "name" : _layer.sketchObject ? _layer.sketchObject.name() + "" : _layer.name() + ""
   }
 
-  properties.name = properties.name + "_" +  getUniqueIdentifyer("name")
+  properties.name = properties.name.replace(/[^a-zA-Z ]/g, "").replace(/\s/g,"") + "_" + getUniqueIdentifyer("name")
 
   return properties
 
@@ -268,7 +268,7 @@ function getFrameProperties(_layer,_parent){
     properties = Object.assign(properties, getFixedPosition(_layer,_parent) )
     properties = Object.assign(properties, getFixedSize(_layer,_parent) )
 
-    var name = _layer.sketchObject.name() + "_" + getUniqueIdentifyer("name")
+    var name = properties.name
     var frame = _layer.sketchObject.frame()
     var openBraquet = name.indexOf("[")
     var closeBraquet = name.indexOf("]")
@@ -298,7 +298,7 @@ function getFrameProperties(_layer,_parent){
       Object.assign(properties, {
         "children" : [],
         "clip" : false,
-        // "targetName" : name
+        "targetName" : properties.name
       })
 
       return properties
@@ -359,7 +359,7 @@ function getStyle(_layer,_parent,_properties,_isGroup){
     radiusBottomRight = rectObj.path().points()[2].cornerRadius()
     radiusBottomLeft = rectObj.path().points()[3].cornerRadius()
 
-  }else if(isRectangle(layer) && layer.layers().firstObject().path().points().length > 4){
+  }else if(isRectangle(layer) && layer.layers().firstObject().path().points().length >= 4){
     //if object is a rectangle
 
     var rectObj = layer.layers().firstObject()
