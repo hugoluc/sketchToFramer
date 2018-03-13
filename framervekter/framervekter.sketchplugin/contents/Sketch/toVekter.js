@@ -298,7 +298,7 @@ function getFrameProperties(_layer,_parent){
       Object.assign(properties, {
         "children" : [],
         "clip" : false,
-        "targetName" : name
+        // "targetName" : name
       })
 
       return properties
