@@ -359,7 +359,7 @@ function getStyle(_layer,_parent,_properties,_isGroup){
     radiusBottomRight = rectObj.path().points()[2].cornerRadius()
     radiusBottomLeft = rectObj.path().points()[3].cornerRadius()
 
-  }else if(isRectangle(layer)){
+  }else if(isRectangle(layer) && rectObj.path().points().length > 4){
     //if object is a rectangle
 
     var rectObj = layer.layers().firstObject()
