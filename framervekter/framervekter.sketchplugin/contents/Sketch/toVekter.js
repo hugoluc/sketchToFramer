@@ -359,7 +359,7 @@ function getStyle(_layer,_parent,_properties,_isGroup){
     radiusBottomRight = rectObj.path().points()[2].cornerRadius()
     radiusBottomLeft = rectObj.path().points()[3].cornerRadius()
 
-  }else if(isRectangle(layer) && rectObj.path().points().length > 4){
+  }else if(isRectangle(layer) && layer.layers().firstObject().path().points().length > 4){
     //if object is a rectangle
 
     var rectObj = layer.layers().firstObject()
@@ -1023,7 +1023,7 @@ function createComposedPath(_layer,_parent,_properties){
       nextParent = Object.assign(nextParent, {
         "id" : getUniqueIdentifyer("id"),
         "name" : subLayers[i].name() + "-Group",
-        "targetName" : : subLayers[i].name() + "-Group",
+        "targetName" : subLayers[i].name() + "-Group",
         "x" : frame.x,
         "y" : frame.y,
         "width" : frame.width,
