@@ -254,6 +254,7 @@ function getShapeProperties(_layer,_parent){
     "id" : getUniqueIdentifyer("id"),
     "parentid" : _parent["id"],
     "name" : _layer.sketchObject ? _layer.sketchObject.name() + "" : _layer.name() + ""
+    "targetName" : _layer.sketchObject ? _layer.sketchObject.name() + "" : _layer.name() + ""
   }
 
   properties.name = properties.name + "_" +  getUniqueIdentifyer("name")
@@ -280,7 +281,6 @@ function getFrameProperties(_layer,_parent){
       if (openBraquet < closeBraquet){
 
         Object.assign(properties, {
-
           "children" : [],
           "clip" : false,
         })
@@ -1023,6 +1023,7 @@ function createComposedPath(_layer,_parent,_properties){
       nextParent = Object.assign(nextParent, {
         "id" : getUniqueIdentifyer("id"),
         "name" : subLayers[i].name() + "-Group",
+        "targetName" : : subLayers[i].name() + "-Group",
         "x" : frame.x,
         "y" : frame.y,
         "width" : frame.width,
@@ -1047,6 +1048,7 @@ function createComposedPath(_layer,_parent,_properties){
         "id" : getUniqueIdentifyer("id"),
         "parentid" : _parent.id,
         "name" : _layer.sketchObject.name()+"",
+        "targetName" : _layer.sketchObject.name()+"",
         "x" : _layer.sketchObject.frame().x(),
         "y" : _layer.sketchObject.frame().y(),
         "width" : _layer.sketchObject.frame().width(),
