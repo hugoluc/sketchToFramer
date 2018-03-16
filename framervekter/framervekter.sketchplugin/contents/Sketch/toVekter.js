@@ -6,6 +6,7 @@ var maskFolder = [];
 var maskChainEnabled = false
 var url;
 var allImages = {}
+var allLayerNames = {}
 
 var globelIdentifyers = {
   "id" : "00000",
@@ -244,6 +245,17 @@ function getUniqueIdentifyer(_identifyer){
   return _string
 }
 
+function uniqueLayerName(_name){
+  if (allLayerNames[_name] > 0) {
+    var count = ++allLayerNames[_name];
+    return _name + "_" + count;
+  }
+  else {
+    allLayerNames[_name] = 1;
+    return _name;
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////   GET PROPERTIES FROM SKETCH LAYERS   //////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -256,7 +268,7 @@ function getShapeProperties(_layer,_parent){
     "name" : _layer.sketchObject ? _layer.sketchObject.name() + "" : _layer.name() + ""
   }
 
-  properties.name = properties.name.replace(/[^a-zA-Z ]/g, "").replace(/\s/g,"") + "_" + getUniqueIdentifyer("name")
+  properties.name = uniqueLayerName( properties.name.replace(/[^a-zA-Z ]/g, "").replace(/\s/g,"") )
 
   return properties
 
@@ -1099,19 +1111,6 @@ function createComposedPath(_layer,_parent,_properties){
       }
     }
   }
-
-
-  //Combined    id.00005  //  p.00001    -- nextParent             05,05 //  05,05  -> 05,05 == -0
-
-  //00          id.00000  //  p.00005    -- nextLayer              00,00 //  00,00  -> 00,00 === -0
-  //01-group    id.00004  //  p.00005    -- lastParent             05,05 //  05,05  -> 05,05 === -0
-
-  //01          id.00009  //  p.00004    -- secondToLastChild      00,00 //  05,05  -> 00,00 === -5
-  //02          id.00008  //  p.00004    -- lastChild              10,10 //  15,15  -> 10,10 === -5
-  //03-group    id.00003  //  p.00004    -- lastChild              30,30 //  35,35  -> 30,30 === -5
-
-  //03          id.00007  //  p.00003    -- lastChild              00,00 //  35,35  -> 00,00 === -5 -30
-  //04          id.00006  //  p.00003    -- lastChild              05,05 //  40,40  -> 05,05 === -5 -30
 
   allParents[allParents.length-1] = Object.assign(allParents[allParents.length-1],getStyle(_layer,_parent,_properties))
   _parent.children.push(allParents[allParents.length-1])
