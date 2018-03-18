@@ -7,7 +7,7 @@ var maskChainEnabled = false
 var url;
 var allImages = {}
 var allLayerNames = {}
-
+var imageFolderCreated = false
 var globelIdentifyers = {
   "id" : "00000",
   "key" : "000",
@@ -16,6 +16,7 @@ var globelIdentifyers = {
 
 var originalVekter,newRoot;
 var framerModels = {};
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -366,19 +367,26 @@ function getStyle(_layer,_parent,_properties,_isGroup){
     //if object is a mask
 
     var rectObj = layer.layers().firstObject()
-    radiusTopLeft = rectObj.path().points()[0].cornerRadius()
-    radiusTopRight = rectObj.path().points()[1].cornerRadius()
-    radiusBottomRight = rectObj.path().points()[2].cornerRadius()
-    radiusBottomLeft = rectObj.path().points()[3].cornerRadius()
+    var points = rectObj.path ? rectObj.path().points() : rectObj.points()
 
-  }else if(isRectangle(layer) && layer.layers().firstObject().path().points().length >= 4){
+    var rectObj = layer.layers().firstObject()
+    radiusTopLeft = points[0].cornerRadius()
+    radiusTopRight = points[1].cornerRadius()
+    radiusBottomRight = points[2].cornerRadius()
+    radiusBottomLeft = points[3].cornerRadius()
+
+  }else if(isRectangle(layer) ){
     //if object is a rectangle
 
     var rectObj = layer.layers().firstObject()
-    radiusTopLeft = rectObj.path().points()[0].cornerRadius()
-    radiusTopRight = rectObj.path().points()[1].cornerRadius()
-    radiusBottomRight = rectObj.path().points()[2].cornerRadius()
-    radiusBottomLeft = rectObj.path().points()[3].cornerRadius()
+    var points = rectObj.path ? rectObj.path().points() : rectObj.points()
+
+    if( points.length > 3){
+      radiusTopLeft = points[0].cornerRadius()
+      radiusTopRight = points[1].cornerRadius()
+      radiusBottomRight = points[2].cornerRadius()
+      radiusBottomLeft = points[3].cornerRadius()
+    }
 
   }
 
@@ -844,7 +852,7 @@ function createPath(_layer,_parent,_properties){
   var newObj = Object.assign({}, framerModels.path)
 
   var pathObj =  _layer.sketchObject ? _layer.sketchObject.layers()[0] : _layer
-  var points = pathObj.path().points()
+  var points = pathObj.path ? pathObj.path().points() : pathObj.points()
   var pathSegments = []
 
   if(_layer.isShape){
@@ -911,8 +919,11 @@ function createPath(_layer,_parent,_properties){
   }
 
   if(_layer.isShape){
+    debugger
 
-    if(!pathObj.path().isClosed()){
+    var isClosed = pathObj.path ? pathObj.path().isClosed() : pathObj.isClosed()
+
+    if(!isClosed){
       _properties =  Object.assign(_properties, { "pathClosed" : false })
     }else{
       _properties =  Object.assign(_properties, { "pathClosed" : true })
@@ -983,6 +994,14 @@ function createText(_layer,_parent,_properties){
 
 function createImage(_layer,_parent,_properties){
 
+  if(!imageFolderCreated){
+    imageFolderCreated = true
+    var iamgeFolderPath = url.path() + "/images/design/"
+    var fileManager= [NSFileManager defaultManager]
+    [fileManager createDirectoryAtPath: iamgeFolderPath  withIntermediateDirectories:true attributes:null error:null]
+  }
+
+
   var thisImageRef = JSON.parse(MSJSONDataArchiver.archiveStringWithRootObject_error_(_layer.sketchObject.immutableModelObject(), nil)).image._ref.split("/")[1];
   if(!allImages[thisImageRef]){
     var imageData = _layer.sketchObject.image().data()
@@ -994,7 +1013,6 @@ function createImage(_layer,_parent,_properties){
   }else{
     imageData = allImages[thisImageRef]
   }
-
 
   _properties.originalFilename = thisImageRef + ".png"
   _properties.image = thisImageRef + ".png"
@@ -1337,6 +1355,7 @@ function exportVekter(_root,_url){
   var path = [@"" stringByAppendingString:exportPath];
   var str = [@"" stringByAppendingString:newVekerTxt];
   str.dataUsingEncoding_(NSUTF8StringEncoding).writeToFile_atomically_(path, true);
+
 
 }
 
