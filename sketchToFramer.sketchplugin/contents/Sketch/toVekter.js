@@ -549,6 +549,7 @@ function getTextStyle(_layer,_parent,_properties){
         continue
       }
 
+      debugger
       var lineHeight =  atributes[i].NSParagraphStyle.style.maximumLineHeight
       var size =  atributes[i].NSFont.attributes.NSFontSizeAttribute
       var align;
@@ -593,7 +594,7 @@ function getTextStyle(_layer,_parent,_properties){
         "COLOR" : color,
         "FONT" : atributes[i].NSFont.attributes.NSFontNameAttribute,
         "SIZE" : size,
-        "LINEHEIGHT" : lineHeight == 0 ?  1 : lineHeight/size,
+        "LINEHEIGHT" : lineHeight == 0 ?  1.2 : lineHeight/size,
         "LETTERSPACING" : atributes[i].NSKern,
         "ALIGN" : align
       })
@@ -919,7 +920,6 @@ function createPath(_layer,_parent,_properties){
   }
 
   if(_layer.isShape){
-    debugger
 
     var isClosed = pathObj.path ? pathObj.path().isClosed() : pathObj.isClosed()
 
