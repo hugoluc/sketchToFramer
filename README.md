@@ -8,7 +8,7 @@ The plugin will not generate code in your Framer project. It rather uses export 
 1. [Download](https://github.com/hugoluc/sketchToFramer/archive/master.zip) the plugin.
 2. Unzip the file and double click
 
-## Usage
+# Usage
 
 1. Select the layer you want to export on Fketch.
 2. Open the "Plugins" menu on Sketch and select sketchtoFramer.
